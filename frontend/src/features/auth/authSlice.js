@@ -104,7 +104,9 @@ export const createEmployee = createAsyncThunk(
       const response = await api.post('/auth/register', employeeData);
       return response.data;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || 'Failed to create employee');
+      const errorMessage = error.response?.data?.message || 'Failed to create employee';
+      const fieldErrors = error.response?.data?.errors;
+      return rejectWithValue({ message: errorMessage, fieldErrors });
     }
   }
 );
@@ -263,12 +265,13 @@ const authSlice = createSlice({
       })
       .addCase(createEmployee.fulfilled, (state, action) => {
         state.loading = false;
-        state.employees.push(action.payload);
+        // Don't push to array - let the component refresh the list
+        // This ensures we get the complete user data from backend
         state.success = true;
       })
       .addCase(createEmployee.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload;
+        state.error = action.payload?.message || action.payload || 'Failed to create employee';
         state.success = false;
       })
       // Toggle Employee Status

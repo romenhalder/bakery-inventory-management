@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { login, clearError } from './authSlice';
 
 const Login = () => {
@@ -73,9 +73,14 @@ const Login = () => {
             </div>
 
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <Link to="/forgot-password" className="text-sm text-[#8B4513] hover:underline">
+                  Forgot Password?
+                </Link>
+              </div>
               <input
                 id="password"
                 name="password"

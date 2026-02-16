@@ -46,12 +46,15 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     private Role role;
 
+    @Builder.Default
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Builder.Default
     @Column(name = "is_email_verified")
     private Boolean isEmailVerified = false;
 
+    @Builder.Default
     @Column(name = "is_phone_verified")
     private Boolean isPhoneVerified = false;
 
@@ -70,6 +73,7 @@ public class User implements UserDetails {
     @Column(name = "otp_expiry")
     private LocalDateTime otpExpiry;
 
+    @Builder.Default
     @Column(name = "otp_attempts")
     private Integer otpAttempts = 0;
 
@@ -120,6 +124,7 @@ public class User implements UserDetails {
 
     public enum Role {
         ADMIN,
+        MANAGER,
         EMPLOYEE
     }
 

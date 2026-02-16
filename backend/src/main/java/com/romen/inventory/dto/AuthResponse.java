@@ -17,9 +17,11 @@ public class AuthResponse {
     private String phone;
     private String fullName;
     private User.Role role;
-    private Long userId;
+    private Long id;  // Changed from userId to id for consistency
     private Boolean isEmailVerified;
     private Boolean isPhoneVerified;
+    private Boolean isActive;
     private String profileImage;
     private String message;
+    private String createdAt;
 }

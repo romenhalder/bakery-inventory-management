@@ -44,10 +44,12 @@ public class AuthService {
                 .phone(user.getPhone())
                 .fullName(user.getFullName())
                 .role(user.getRole())
-                .userId(user.getId())
+                .id(user.getId())
                 .isEmailVerified(user.getIsEmailVerified())
                 .isPhoneVerified(user.getIsPhoneVerified())
+                .isActive(user.getIsActive())
                 .profileImage(user.getProfileImage())
+                .createdAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
                 .message("Login successful")
                 .build();
     }
@@ -77,10 +79,12 @@ public class AuthService {
                 .phone(user.getPhone())
                 .fullName(user.getFullName())
                 .role(user.getRole())
-                .userId(user.getId())
+                .id(user.getId())
                 .isEmailVerified(user.getIsEmailVerified())
                 .isPhoneVerified(user.getIsPhoneVerified())
+                .isActive(user.getIsActive())
                 .profileImage(user.getProfileImage())
+                .createdAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
                 .message("Token refreshed successfully")
                 .build();
     }

@@ -56,21 +56,26 @@ public class Product {
     @Column(name = "image_url")
     private String imageUrl;
 
+    @Builder.Default
     @Column(name = "min_stock_level")
     private Integer minStockLevel = 10;
 
+    @Builder.Default
     @Column(name = "max_stock_level")
     private Integer maxStockLevel = 1000;
 
+    @Builder.Default
     @Column(name = "reorder_point")
     private Integer reorderPoint = 20;
 
     @Column(name = "expiry_days")
     private Integer expiryDays;
 
+    @Builder.Default
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Builder.Default
     @Column(name = "is_sellable")
     private Boolean isSellable = true;
 

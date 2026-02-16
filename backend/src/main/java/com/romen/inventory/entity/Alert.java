@@ -46,9 +46,11 @@ public class Alert {
     @Column(name = "threshold_quantity")
     private Integer thresholdQuantity;
 
+    @Builder.Default
     @Column(name = "is_read")
     private Boolean isRead = false;
 
+    @Builder.Default
     @Column(name = "is_resolved")
     private Boolean isResolved = false;
 

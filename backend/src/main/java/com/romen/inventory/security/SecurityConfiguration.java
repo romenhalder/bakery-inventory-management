@@ -47,6 +47,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                             new AntPathRequestMatcher("/auth/**"),
+                            new AntPathRequestMatcher("/password-reset/**"),
+                            new AntPathRequestMatcher("/setup/**"),
                             new AntPathRequestMatcher("/h2-console/**"),
                             new AntPathRequestMatcher("/error")
                         ).permitAll()

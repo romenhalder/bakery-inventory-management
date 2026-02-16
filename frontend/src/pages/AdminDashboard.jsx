@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -9,7 +9,9 @@ import {
   CubeIcon,
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
+  KeyIcon,
 } from '@heroicons/react/24/outline';
+import axios from 'axios';
 import { fetchProducts } from '../features/products/productSlice';
 import { fetchInventory, fetchLowStock } from '../features/inventory/inventorySlice';
 import { fetchUnreadAlerts } from '../features/alerts/alertSlice';
@@ -17,17 +19,33 @@ import { fetchUnreadAlerts } from '../features/alerts/alertSlice';
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { token } = useSelector((state) => state.auth);
   
   const { products } = useSelector((state) => state.products);
   const { inventory, lowStock } = useSelector((state) => state.inventory);
   const { unreadAlerts } = useSelector((state) => state.alerts);
+  const [passwordResetCount, setPasswordResetCount] = useState(0);
+
+  const API_URL = 'http://localhost:8080/api';
 
   useEffect(() => {
     dispatch(fetchProducts());
     dispatch(fetchInventory());
     dispatch(fetchLowStock());
     dispatch(fetchUnreadAlerts());
+    fetchPasswordResetCount();
   }, [dispatch]);
+
+  const fetchPasswordResetCount = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/password-reset/requests/count`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setPasswordResetCount(response.data.count);
+    } catch (err) {
+      console.error('Failed to fetch password reset count', err);
+    }
+  };
 
   const stats = [
     {
@@ -52,11 +70,11 @@ const AdminDashboard = () => {
       link: '/alerts',
     },
     {
-      title: 'Unread Alerts',
-      value: unreadAlerts.length,
-      icon: CubeIcon,
-      color: 'bg-red-500',
-      link: '/alerts',
+      title: 'Password Reset Requests',
+      value: passwordResetCount,
+      icon: KeyIcon,
+      color: 'bg-orange-500',
+      link: '/password-reset-requests',
     },
   ];
 
@@ -157,11 +175,26 @@ const AdminDashboard = () => {
               <span className="text-sm font-medium text-yellow-700">View Alerts</span>
             </button>
             <button
-              onClick={() => navigate('/reports')}
-              className="p-4 bg-purple-50 rounded-lg text-center hover:bg-purple-100 transition-colors"
+              onClick={() => navigate('/password-reset-requests')}
+              className={`p-4 rounded-lg text-center transition-colors relative ${
+                passwordResetCount > 0 
+                  ? 'bg-red-50 hover:bg-red-100' 
+                  : 'bg-orange-50 hover:bg-orange-100'
+              }`}
             >
-              <ChartBarIcon className="h-8 w-8 mx-auto text-purple-600 mb-2" />
-              <span className="text-sm font-medium text-purple-700">Reports</span>
+              <KeyIcon className={`h-8 w-8 mx-auto mb-2 ${
+                passwordResetCount > 0 ? 'text-red-600' : 'text-orange-600'
+              }`} />
+              <span className={`text-sm font-medium ${
+                passwordResetCount > 0 ? 'text-red-700' : 'text-orange-700'
+              }`}>
+                Password Requests
+                {passwordResetCount > 0 && (
+                  <span className="ml-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
+                    {passwordResetCount}
+                  </span>
+                )}
+              </span>
             </button>
           </div>
         </div>

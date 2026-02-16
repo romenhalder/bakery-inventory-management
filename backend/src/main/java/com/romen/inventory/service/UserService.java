@@ -142,7 +142,10 @@ public class UserService {
     }
 
     public List<User> getAllEmployees() {
-        return userRepository.findByRole(User.Role.EMPLOYEE);
+        // Return both EMPLOYEE and MANAGER roles (excluding ADMIN)
+        return userRepository.findAll().stream()
+                .filter(user -> user.getRole() == User.Role.EMPLOYEE || user.getRole() == User.Role.MANAGER)
+                .collect(Collectors.toList());
     }
 
     @Transactional

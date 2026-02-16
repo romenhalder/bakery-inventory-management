@@ -51,18 +51,20 @@ public class AuthController {
     }
 
     @PostMapping("/register")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest request) {
         User user = userService.registerUser(request);
 
         AuthResponse response = AuthResponse.builder()
+                .id(user.getId())
                 .email(user.getEmail())
                 .phone(user.getPhone())
                 .fullName(user.getFullName())
                 .role(user.getRole())
-                .userId(user.getId())
                 .isEmailVerified(user.getIsEmailVerified())
                 .isPhoneVerified(user.getIsPhoneVerified())
+                .isActive(user.getIsActive())
+                .createdAt(user.getCreatedAt() != null ? user.getCreatedAt().toString() : null)
                 .message("Employee registered successfully by Admin.")
                 .build();
 
@@ -70,7 +72,7 @@ public class AuthController {
     }
 
     @GetMapping("/employees")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<List<User>> getAllEmployees() {
         List<User> employees = userService.getAllEmployees();
         return ResponseEntity.ok(employees);

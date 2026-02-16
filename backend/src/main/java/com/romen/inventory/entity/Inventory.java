@@ -29,12 +29,15 @@ public class Inventory {
     @JoinColumn(name = "product_id", nullable = false, unique = true)
     private Product product;
 
+    @Builder.Default
     @Column(name = "current_quantity", nullable = false)
     private Integer currentQuantity = 0;
 
+    @Builder.Default
     @Column(name = "reserved_quantity")
     private Integer reservedQuantity = 0;
 
+    @Builder.Default
     @Column(name = "available_quantity")
     private Integer availableQuantity = 0;
 
@@ -50,9 +53,11 @@ public class Inventory {
     @Column(name = "batch_number", length = 50)
     private String batchNumber;
 
+    @Builder.Default
     @Column(name = "is_low_stock")
     private Boolean isLowStock = false;
 
+    @Builder.Default
     @Column(name = "is_out_of_stock")
     private Boolean isOutOfStock = true;
 

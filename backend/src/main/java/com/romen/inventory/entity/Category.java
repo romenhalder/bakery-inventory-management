@@ -39,12 +39,15 @@ public class Category {
     @JoinColumn(name = "parent_id")
     private Category parent;
 
+    @Builder.Default
     @Column(name = "expiry_days")
     private Integer expiryDays = 3;
 
+    @Builder.Default
     @Column(name = "display_order")
     private Integer displayOrder = 0;
 
+    @Builder.Default
     @Column(name = "is_active")
     private Boolean isActive = true;
 

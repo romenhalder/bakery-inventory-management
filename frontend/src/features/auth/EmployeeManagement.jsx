@@ -14,7 +14,9 @@ import { fetchEmployees, createEmployee, toggleEmployeeStatus, deleteEmployee } 
 const EmployeeManagement = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { employees, loading, error, success } = useSelector((state) => state.auth);
+  const { employees, loading, error, success, user } = useSelector((state) => state.auth);
+  const isAdmin = user?.role === 'ADMIN';
+  const isManager = user?.role === 'MANAGER';
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [formData, setFormData] = useState({
@@ -24,8 +26,10 @@ const EmployeeManagement = () => {
     password: '',
     confirmPassword: '',
     address: '',
+    role: 'EMPLOYEE',
   });
   const [validationErrors, setValidationErrors] = useState({});
+  const [submitError, setSubmitError] = useState('');
 
   useEffect(() => {
     dispatch(fetchEmployees());
@@ -33,6 +37,8 @@ const EmployeeManagement = () => {
 
   useEffect(() => {
     if (success) {
+      // Refresh employee list to get complete data from backend
+      dispatch(fetchEmployees());
       setShowAddModal(false);
       setFormData({
         fullName: '',
@@ -41,9 +47,12 @@ const EmployeeManagement = () => {
         password: '',
         confirmPassword: '',
         address: '',
+        role: 'EMPLOYEE',
       });
+      setSubmitError('');
+      setValidationErrors({});
     }
-  }, [success]);
+  }, [success, dispatch]);
 
   const validateForm = () => {
     const errors = {};
@@ -83,9 +92,12 @@ const EmployeeManagement = () => {
     if (validationErrors[e.target.name]) {
       setValidationErrors({ ...validationErrors, [e.target.name]: '' });
     }
+    if (submitError) {
+      setSubmitError('');
+    }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
 
@@ -95,10 +107,18 @@ const EmployeeManagement = () => {
       phone: formData.phone,
       password: formData.password,
       address: formData.address,
-      role: 'EMPLOYEE',
+      role: formData.role,
     };
 
-    dispatch(createEmployee(employeeData));
+    try {
+      await dispatch(createEmployee(employeeData)).unwrap();
+      setSubmitError('');
+    } catch (err) {
+      if (err.fieldErrors) {
+        setValidationErrors(err.fieldErrors);
+      }
+      setSubmitError(err.message || 'Failed to create employee');
+    }
   };
 
   const handleToggleStatus = (id) => {
@@ -246,6 +266,12 @@ const EmployeeManagement = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
+              {submitError && (
+                <div className="p-3 bg-red-50 border border-red-200 rounded-md">
+                  <p className="text-sm text-red-600">{submitError}</p>
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm font-medium text-gray-700">Full Name *</label>
                 <input
@@ -253,12 +279,17 @@ const EmployeeManagement = () => {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.fullName ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
+                    validationErrors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                 />
                 {validationErrors.fullName && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.fullName}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {validationErrors.fullName}
+                  </p>
                 )}
               </div>
 
@@ -269,12 +300,17 @@ const EmployeeManagement = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.email ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
+                    validationErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                 />
                 {validationErrors.email && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.email}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {validationErrors.email}
+                  </p>
                 )}
               </div>
 
@@ -285,12 +321,17 @@ const EmployeeManagement = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.phone ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
+                    validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                 />
                 {validationErrors.phone && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.phone}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {validationErrors.phone}
+                  </p>
                 )}
               </div>
 
@@ -305,6 +346,21 @@ const EmployeeManagement = () => {
                 />
               </div>
 
+              {isAdmin && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Role *</label>
+                  <select
+                    name="role"
+                    value={formData.role}
+                    onChange={handleChange}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50"
+                  >
+                    <option value="EMPLOYEE">Employee</option>
+                    <option value="MANAGER">Manager</option>
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Password *</label>
                 <input
@@ -312,12 +368,17 @@ const EmployeeManagement = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.password ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
+                    validationErrors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                 />
                 {validationErrors.password && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.password}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {validationErrors.password}
+                  </p>
                 )}
               </div>
 
@@ -328,12 +389,17 @@ const EmployeeManagement = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.confirmPassword ? 'border-red-500' : ''
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
+                    validationErrors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
                   }`}
                 />
                 {validationErrors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{validationErrors.confirmPassword}</p>
+                  <p className="mt-1 text-sm text-red-600 flex items-center">
+                    <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    {validationErrors.confirmPassword}
+                  </p>
                 )}
               </div>
 
