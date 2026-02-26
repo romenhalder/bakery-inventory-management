@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-const API_URL = 'http://localhost:8080/api';
+const API_URL = 'http://localhost:8080';
 
 const api = axios.create({
   baseURL: API_URL,
@@ -63,7 +63,7 @@ export const updateProduct = createAsyncThunk(
   'products/update',
   async ({ id, productData }, { rejectWithValue }) => {
     try {
-      const response = await api.put(`/products/${id}`, productData, {
+      const response = await api.post(`/products/${id}`, productData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -111,10 +111,43 @@ export const fetchProductsByCategory = createAsyncThunk(
   }
 );
 
+export const fetchCategories = createAsyncThunk(
+  'products/fetchCategories',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/categories');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch categories');
+    }
+  }
+);
+
+export const filterProducts = createAsyncThunk(
+  'products/filter',
+  async ({ categoryId, brandName, flavor, productType, minPrice, maxPrice }, { rejectWithValue }) => {
+    try {
+      const params = new URLSearchParams();
+      if (categoryId) params.append('categoryId', categoryId);
+      if (brandName) params.append('brandName', brandName);
+      if (flavor) params.append('flavor', flavor);
+      if (productType) params.append('productType', productType);
+      if (minPrice) params.append('minPrice', minPrice);
+      if (maxPrice) params.append('maxPrice', maxPrice);
+
+      const response = await api.get(`/products/filter?${params.toString()}`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to filter products');
+    }
+  }
+);
+
 const productSlice = createSlice({
   name: 'products',
   initialState: {
     products: [],
+    categories: [],
     currentProduct: null,
     loading: false,
     error: null,
@@ -234,6 +267,31 @@ const productSlice = createSlice({
         state.products = action.payload;
       })
       .addCase(fetchProductsByCategory.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Fetch categories
+      .addCase(fetchCategories.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.loading = false;
+        state.categories = action.payload;
+      })
+      .addCase(fetchCategories.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Filter products
+      .addCase(filterProducts.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(filterProducts.fulfilled, (state, action) => {
+        state.loading = false;
+        state.products = action.payload;
+      })
+      .addCase(filterProducts.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

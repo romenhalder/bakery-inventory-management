@@ -91,9 +91,9 @@ public class AlertService {
     private AlertResponse mapToAlertResponse(Alert alert) {
         return AlertResponse.builder()
                 .id(alert.getId())
-                .productId(alert.getProduct().getId())
-                .productName(alert.getProduct().getName())
-                .productCode(alert.getProduct().getProductCode())
+                .productId(alert.getProduct() != null ? alert.getProduct().getId() : null)
+                .productName(alert.getProduct() != null ? alert.getProduct().getName() : null)
+                .productCode(alert.getProduct() != null ? alert.getProduct().getProductCode() : null)
                 .alertType(alert.getAlertType())
                 .message(alert.getMessage())
                 .description(alert.getDescription())

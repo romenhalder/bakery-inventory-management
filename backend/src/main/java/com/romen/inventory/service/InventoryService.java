@@ -37,6 +37,7 @@ public class InventoryService {
 
     public List<InventoryResponse> getAllInventory() {
         return inventoryRepository.findAll().stream()
+                .filter(inv -> inv.getProduct().getIsActive())
                 .map(this::mapToInventoryResponse)
                 .collect(Collectors.toList());
     }
@@ -49,12 +50,14 @@ public class InventoryService {
 
     public List<InventoryResponse> getLowStockItems() {
         return inventoryRepository.findAllLowStock().stream()
+                .filter(inv -> inv.getProduct().getIsActive())
                 .map(this::mapToInventoryResponse)
                 .collect(Collectors.toList());
     }
 
     public List<InventoryResponse> getOutOfStockItems() {
         return inventoryRepository.findByIsOutOfStockTrue().stream()
+                .filter(inv -> inv.getProduct().getIsActive())
                 .map(this::mapToInventoryResponse)
                 .collect(Collectors.toList());
     }
@@ -106,7 +109,7 @@ public class InventoryService {
         }
 
         inventory.setCurrentQuantity(newQuantity);
-        
+
         // Set batch and expiry if provided
         if (request.getBatchNumber() != null) {
             inventory.setBatchNumber(request.getBatchNumber());
@@ -121,8 +124,8 @@ public class InventoryService {
         StockTransaction transaction = StockTransaction.builder()
                 .product(product)
                 .transactionType(request.getType())
-                .quantity(request.getType() == StockTransaction.TransactionType.STOCK_IN ? 
-                        request.getQuantity() : -request.getQuantity())
+                .quantity(request.getType() == StockTransaction.TransactionType.STOCK_IN ? request.getQuantity()
+                        : -request.getQuantity())
                 .previousQuantity(previousQuantity)
                 .newQuantity(newQuantity)
                 .unitPrice(request.getUnitPrice())
@@ -131,8 +134,9 @@ public class InventoryService {
                 .batchNumber(request.getBatchNumber())
                 .expiryDate(request.getExpiryDate())
                 .user(user)
-                .supplier(request.getSupplierId() != null ? 
-                        supplierRepository.findById(request.getSupplierId()).orElse(null) : null)
+                .supplier(request.getSupplierId() != null
+                        ? supplierRepository.findById(request.getSupplierId()).orElse(null)
+                        : null)
                 .notes(request.getNotes())
                 .build();
 
@@ -147,17 +151,39 @@ public class InventoryService {
     @Transactional
     public void checkAndCreateAlerts(Product product, Inventory inventory, Integer previousQty, Integer newQty) {
         // Check for low stock
-        if (newQty <= product.getMinStockLevel() && previousQty > product.getMinStockLevel()) {
-            createAlert(product, Alert.AlertType.LOW_STOCK, 
-                    "Low stock alert: " + product.getName() + " has only " + newQty + " units remaining",
-                    newQty, product.getMinStockLevel());
+        if (newQty <= product.getMinStockLevel()) {
+            boolean hasAlert = alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(),
+                    Alert.AlertType.LOW_STOCK);
+            if (!hasAlert) {
+                createAlert(product, Alert.AlertType.LOW_STOCK,
+                        "Low stock alert: " + product.getName() + " has only " + newQty + " units remaining",
+                        newQty, product.getMinStockLevel());
+            }
+        } else {
+            alertRepository.findByProductIdOrderByCreatedAtDesc(product.getId()).stream()
+                    .filter(a -> a.getAlertType() == Alert.AlertType.LOW_STOCK && !a.getIsResolved())
+                    .forEach(a -> {
+                        a.setIsResolved(true);
+                        alertRepository.save(a);
+                    });
         }
 
         // Check for out of stock
-        if (newQty <= 0 && previousQty > 0) {
-            createAlert(product, Alert.AlertType.OUT_OF_STOCK,
-                    "Out of stock: " + product.getName() + " is now out of stock",
-                    newQty, 0);
+        if (newQty <= 0) {
+            boolean hasAlert = alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(),
+                    Alert.AlertType.OUT_OF_STOCK);
+            if (!hasAlert) {
+                createAlert(product, Alert.AlertType.OUT_OF_STOCK,
+                        "Out of stock: " + product.getName() + " is now out of stock",
+                        newQty, 0);
+            }
+        } else {
+            alertRepository.findByProductIdOrderByCreatedAtDesc(product.getId()).stream()
+                    .filter(a -> a.getAlertType() == Alert.AlertType.OUT_OF_STOCK && !a.getIsResolved())
+                    .forEach(a -> {
+                        a.setIsResolved(true);
+                        alertRepository.save(a);
+                    });
         }
 
         // Check for reorder point
@@ -170,15 +196,18 @@ public class InventoryService {
         // Check expiry
         if (inventory.getExpiryDate() != null) {
             LocalDateTime expiryWarningDate = LocalDateTime.now().plusDays(7);
-            if (inventory.getExpiryDate().isBefore(expiryWarningDate) && inventory.getExpiryDate().isAfter(LocalDateTime.now())) {
-                if (!alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(), Alert.AlertType.EXPIRING_SOON)) {
+            if (inventory.getExpiryDate().isBefore(expiryWarningDate)
+                    && inventory.getExpiryDate().isAfter(LocalDateTime.now())) {
+                if (!alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(),
+                        Alert.AlertType.EXPIRING_SOON)) {
                     createAlert(product, Alert.AlertType.EXPIRING_SOON,
                             "Expiring soon: " + product.getName() + " will expire on " + inventory.getExpiryDate(),
                             newQty, 0);
                 }
             }
             if (inventory.getExpiryDate().isBefore(LocalDateTime.now())) {
-                if (!alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(), Alert.AlertType.EXPIRED)) {
+                if (!alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(),
+                        Alert.AlertType.EXPIRED)) {
                     createAlert(product, Alert.AlertType.EXPIRED,
                             "Expired: " + product.getName() + " has expired on " + inventory.getExpiryDate(),
                             newQty, 0);
@@ -188,7 +217,8 @@ public class InventoryService {
     }
 
     @Transactional
-    public void createAlert(Product product, Alert.AlertType type, String message, Integer currentQty, Integer threshold) {
+    public void createAlert(Product product, Alert.AlertType type, String message, Integer currentQty,
+            Integer threshold) {
         Alert alert = Alert.builder()
                 .product(product)
                 .alertType(type)

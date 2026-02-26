@@ -46,17 +46,15 @@ public class SecurityConfiguration {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
-                            new AntPathRequestMatcher("/auth/**"),
-                            new AntPathRequestMatcher("/password-reset/**"),
-                            new AntPathRequestMatcher("/setup/**"),
-                            new AntPathRequestMatcher("/h2-console/**"),
-                            new AntPathRequestMatcher("/error")
-                        ).permitAll()
-                        .anyRequest().authenticated()
-                )
+                                new AntPathRequestMatcher("/auth/**"),
+                                new AntPathRequestMatcher("/password-reset/**"),
+                                new AntPathRequestMatcher("/setup/**"),
+                                new AntPathRequestMatcher("/h2-console/**"),
+                                new AntPathRequestMatcher("/error"))
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                )
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

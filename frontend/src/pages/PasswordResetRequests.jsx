@@ -14,7 +14,7 @@ const PasswordResetRequests = () => {
   const [showPassword, setShowPassword] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
 
-  const API_URL = 'http://localhost:8080/api';
+  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     fetchRequests();
@@ -54,7 +54,7 @@ const PasswordResetRequests = () => {
   const handleSetPassword = async (requestId) => {
     const password = passwords[requestId];
     const validationError = validatePassword(password);
-    
+
     if (validationError) {
       setValidationErrors({ ...validationErrors, [requestId]: validationError });
       return;
@@ -144,11 +144,10 @@ const PasswordResetRequests = () => {
                         <h3 className="font-semibold text-lg">{request.user?.fullName}</h3>
                         <p className="text-sm text-gray-600">{request.user?.email}</p>
                       </div>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        request.user?.role === 'MANAGER' 
-                          ? 'bg-purple-100 text-purple-700' 
+                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${request.user?.role === 'MANAGER'
+                          ? 'bg-purple-100 text-purple-700'
                           : 'bg-green-100 text-green-700'
-                      }`}>
+                        }`}>
                         {request.user?.role}
                       </span>
                     </div>
@@ -178,9 +177,8 @@ const PasswordResetRequests = () => {
                         value={passwords[request.id] || ''}
                         onChange={(e) => handlePasswordChange(request.id, e.target.value)}
                         placeholder="Enter new password (min 6 characters)"
-                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#8B4513] focus:border-transparent ${
-                          validationErrors[request.id] ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                        }`}
+                        className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-[#8B4513] focus:border-transparent ${validationErrors[request.id] ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                          }`}
                         disabled={processingId === request.id}
                       />
                       <button

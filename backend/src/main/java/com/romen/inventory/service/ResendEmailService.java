@@ -1,37 +1,40 @@
 package com.romen.inventory.service;
 
-import com.resend.Resend;
-import com.resend.core.exception.ResendException;
-import com.resend.services.emails.model.SendEmailRequest;
-import com.resend.services.emails.model.SendEmailResponse;
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
 @Service
 @Slf4j
 public class ResendEmailService {
 
-    @Value("${resend.api.key:}")
-    private String resendApiKey;
+    @Autowired
+    private JavaMailSender mailSender;
 
-    @Value("${resend.from.email:noreply@bakery-inventory.com}")
+    @Value("${spring.mail.username:romenromen2002@gmail.com}")
     private String fromEmail;
 
-    private Resend resend;
-
-    private Resend getResend() {
-        if (resend == null && isValidApiKey()) {
-            resend = new Resend(resendApiKey);
+    private void sendEmail(String toEmail, String subject, String htmlContent) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            helper.setFrom(fromEmail);
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            helper.setText(htmlContent, true);
+            
+            mailSender.send(message);
+            log.info("Email sent successfully to: {}", toEmail);
+        } catch (MessagingException e) {
+            log.error("Failed to send email to: {}. Error: {}", toEmail, e.getMessage());
+            throw new RuntimeException("Failed to send email: " + e.getMessage(), e);
         }
-        return resend;
-    }
-
-    private boolean isValidApiKey() {
-        return resendApiKey != null 
-            && !resendApiKey.isEmpty() 
-            && !resendApiKey.equals("re_your_resend_api_key_here")
-            && resendApiKey.startsWith("re_");
     }
 
     public void sendOtpEmail(String toEmail, String otp, String purpose) {
@@ -80,31 +83,6 @@ public class ResendEmailService {
         
         sendEmail(adminEmail, subject, htmlContent);
         log.info("Admin notification sent to: {} for employee: {}", adminEmail, employeeEmail);
-    }
-
-    private void sendEmail(String toEmail, String subject, String htmlContent) {
-        if (getResend() == null) {
-            // Fallback to logging if Resend is not configured
-            log.warn("Resend API key not configured. Email would have been sent to: {}", toEmail);
-            log.info("Subject: {}", subject);
-            log.info("Content: {}", htmlContent);
-            return;
-        }
-
-        try {
-            SendEmailRequest params = SendEmailRequest.builder()
-                    .from(fromEmail)
-                    .to(toEmail)
-                    .subject(subject)
-                    .html(htmlContent)
-                    .build();
-
-            SendEmailResponse data = resend.emails().send(params);
-            log.info("Email sent successfully. ID: {}", data.getId());
-        } catch (ResendException e) {
-            log.error("Failed to send email to: {}. Error: {}", toEmail, e.getMessage());
-            throw new RuntimeException("Failed to send email", e);
-        }
     }
 
     private String buildOtpEmailTemplate(String otp, String purpose) {

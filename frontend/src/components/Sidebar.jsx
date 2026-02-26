@@ -9,6 +9,9 @@ import {
   UsersIcon,
   CubeIcon,
   KeyIcon,
+  CurrencyRupeeIcon,
+  TagIcon,
+  TruckIcon,
 } from '@heroicons/react/24/outline';
 
 const Sidebar = () => {
@@ -19,7 +22,11 @@ const Sidebar = () => {
 
   const adminLinks = [
     { to: '/dashboard', icon: HomeIcon, label: 'Dashboard' },
+    { to: '/sell', icon: CurrencyRupeeIcon, label: 'Sell Product' },
     { to: '/products', icon: ShoppingBagIcon, label: 'Products' },
+    { to: '/raw-materials', icon: CubeIcon, label: 'Raw Materials' },
+    { to: '/categories', icon: TagIcon, label: 'Categories' },
+    { to: '/suppliers', icon: TruckIcon, label: 'Suppliers' },
     { to: '/inventory', icon: ArchiveBoxIcon, label: 'Inventory' },
     { to: '/alerts', icon: ExclamationTriangleIcon, label: 'Alerts' },
     { to: '/employees', icon: UsersIcon, label: 'Employees' },
@@ -29,7 +36,11 @@ const Sidebar = () => {
 
   const managerLinks = [
     { to: '/employee-dashboard', icon: HomeIcon, label: 'Dashboard' },
+    { to: '/sell', icon: CurrencyRupeeIcon, label: 'Sell Product' },
     { to: '/products', icon: ShoppingBagIcon, label: 'Products' },
+    { to: '/raw-materials', icon: CubeIcon, label: 'Raw Materials' },
+    { to: '/categories', icon: TagIcon, label: 'Categories' },
+    { to: '/suppliers', icon: TruckIcon, label: 'Suppliers' },
     { to: '/inventory', icon: ArchiveBoxIcon, label: 'Inventory' },
     { to: '/alerts', icon: ExclamationTriangleIcon, label: 'Alerts' },
     { to: '/reports', icon: ChartBarIcon, label: 'Reports' },
@@ -37,7 +48,9 @@ const Sidebar = () => {
 
   const employeeLinks = [
     { to: '/employee-dashboard', icon: HomeIcon, label: 'Dashboard' },
+    { to: '/sell', icon: CurrencyRupeeIcon, label: 'Sell Product' },
     { to: '/products', icon: ShoppingBagIcon, label: 'Products' },
+    { to: '/raw-materials', icon: CubeIcon, label: 'Raw Materials' },
     { to: '/inventory', icon: ArchiveBoxIcon, label: 'Inventory' },
     { to: '/alerts', icon: ExclamationTriangleIcon, label: 'Alerts' },
   ];
@@ -49,9 +62,9 @@ const Sidebar = () => {
       <nav className="p-4 space-y-2">
         {links.map((link) => {
           const Icon = link.icon;
-          const isActive = location.pathname === link.to || 
-                          (link.to !== '/' && location.pathname.startsWith(link.to));
-          
+          const isActive = location.pathname === link.to ||
+            (link.to !== '/' && location.pathname.startsWith(link.to));
+
           return (
             <NavLink
               key={link.to}
@@ -67,9 +80,8 @@ const Sidebar = () => {
 
       <div className="absolute bottom-0 w-64 p-4 border-t bg-gray-50">
         <div className="flex items-center space-x-2 text-sm text-gray-600">
-          <div className={`w-2 h-2 rounded-full ${
-            isAdmin ? 'bg-green-500' : isManager ? 'bg-purple-500' : 'bg-blue-500'
-          }`} />
+          <div className={`w-2 h-2 rounded-full ${isAdmin ? 'bg-green-500' : isManager ? 'bg-purple-500' : 'bg-blue-500'
+            }`} />
           <span>{isAdmin ? 'Administrator' : isManager ? 'Manager' : 'Employee'}</span>
         </div>
       </div>

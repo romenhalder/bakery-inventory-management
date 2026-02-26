@@ -17,7 +17,7 @@ const Setup = () => {
   const [submitError, setSubmitError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const API_URL = 'http://localhost:8080/api';
+  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     checkSetup();
@@ -40,33 +40,33 @@ const Setup = () => {
 
   const validateForm = () => {
     const newErrors = {};
-    
+
     if (!formData.fullName.trim()) {
       newErrors.fullName = 'Full name is required';
     }
-    
+
     if (!formData.email.trim()) {
       newErrors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = 'Invalid email format';
     }
-    
+
     if (!formData.phone.trim()) {
       newErrors.phone = 'Phone number is required';
     } else if (!/^[0-9]{10,15}$/.test(formData.phone)) {
       newErrors.phone = 'Phone must be 10-15 digits';
     }
-    
+
     if (!formData.password) {
       newErrors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       newErrors.password = 'Password must be at least 6 characters';
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
-    
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,7 +86,7 @@ const Setup = () => {
     if (!validateForm()) return;
 
     setSubmitError('');
-    
+
     try {
       const response = await axios.post(`${API_URL}/setup/init`, {
         fullName: formData.fullName,

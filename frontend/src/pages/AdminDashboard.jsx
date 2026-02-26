@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   ShoppingBagIcon,
   ArchiveBoxIcon,
@@ -10,6 +10,8 @@ import {
   ArrowTrendingUpIcon,
   ArrowTrendingDownIcon,
   KeyIcon,
+  CurrencyRupeeIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { fetchProducts } from '../features/products/productSlice';
@@ -19,14 +21,16 @@ import { fetchUnreadAlerts } from '../features/alerts/alertSlice';
 const AdminDashboard = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { token } = useSelector((state) => state.auth);
-  
+  const { token, user } = useSelector((state) => state.auth);
+
   const { products } = useSelector((state) => state.products);
   const { inventory, lowStock } = useSelector((state) => state.inventory);
   const { unreadAlerts } = useSelector((state) => state.alerts);
   const [passwordResetCount, setPasswordResetCount] = useState(0);
+  const [todaySales, setTodaySales] = useState({ totalSales: 0, transactionCount: 0 });
+  const [recentSales, setRecentSales] = useState([]);
 
-  const API_URL = 'http://localhost:8080/api';
+  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -34,6 +38,8 @@ const AdminDashboard = () => {
     dispatch(fetchLowStock());
     dispatch(fetchUnreadAlerts());
     fetchPasswordResetCount();
+    fetchTodaySales();
+    fetchRecentSales();
   }, [dispatch]);
 
   const fetchPasswordResetCount = async () => {
@@ -47,58 +53,94 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchTodaySales = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/sales/summary/today`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setTodaySales(response.data);
+    } catch (err) {
+      console.error('Failed to fetch today sales', err);
+    }
+  };
+
+  const fetchRecentSales = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/sales/recent?limit=5`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRecentSales(response.data);
+    } catch (err) {
+      console.error('Failed to fetch recent sales', err);
+    }
+  };
+
   const stats = [
+    {
+      title: "Today's Sales",
+      value: `₹${todaySales.totalSales || 0}`,
+      icon: CurrencyRupeeIcon,
+      color: 'bg-green-500',
+      link: '/sell',
+    },
+    {
+      title: 'Transactions Today',
+      value: todaySales.transactionCount || 0,
+      icon: ChartBarIcon,
+      color: 'bg-blue-500',
+      link: '/sell',
+    },
     {
       title: 'Total Products',
       value: products.length,
       icon: ShoppingBagIcon,
-      color: 'bg-blue-500',
+      color: 'bg-indigo-500',
       link: '/products',
     },
     {
-      title: 'Inventory Items',
-      value: inventory.length,
-      icon: ArchiveBoxIcon,
-      color: 'bg-green-500',
-      link: '/inventory',
-    },
-    {
-      title: 'Low Stock Alerts',
+      title: 'Low Stock Items',
       value: lowStock.length,
       icon: ExclamationTriangleIcon,
-      color: 'bg-yellow-500',
+      color: lowStock.length > 0 ? 'bg-red-500' : 'bg-green-500',
       link: '/alerts',
     },
     {
-      title: 'Password Reset Requests',
+      title: 'Password Requests',
       value: passwordResetCount,
       icon: KeyIcon,
-      color: 'bg-orange-500',
+      color: passwordResetCount > 0 ? 'bg-orange-500' : 'bg-gray-400',
       link: '/password-reset-requests',
-    },
+    }
   ];
 
-  const recentActivities = [
-    { text: 'New product added: Chocolate Cake', time: '2 hours ago', type: 'add' },
-    { text: 'Stock updated: Flour (+50 kg)', time: '3 hours ago', type: 'update' },
-    { text: 'Low stock alert: Sugar', time: '5 hours ago', type: 'alert' },
-    { text: 'Product sold: Croissant x 10', time: '1 day ago', type: 'sale' },
-  ];
+  const getStockStatus = () => {
+    const outOfStock = products.filter(p => p.isOutOfStock).length;
+    const lowStockItems = products.filter(p => p.isLowStock).length;
+    const inStock = products.length - outOfStock - lowStockItems;
+    return { outOfStock, lowStockItems, inStock };
+  };
+
+  const stockStatus = getStockStatus();
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-[#8B4513]">Admin Dashboard</h1>
-        <button
-          onClick={() => navigate('/products/add')}
-          className="btn-primary"
-        >
-          + Add Product
-        </button>
+        <div>
+          <h1 className="text-3xl font-bold text-[#8B4513]">Admin Dashboard</h1>
+          <p className="text-gray-500">Welcome back, {user?.fullName}!</p>
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => navigate('/sell')}
+            className="btn-primary bg-green-600 hover:bg-green-700"
+          >
+            🧁 New Sale
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((stat) => {
           const Icon = stat.icon;
           return (
@@ -110,7 +152,7 @@ const AdminDashboard = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                  <p className="text-3xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                  <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
                 </div>
                 <div className={`${stat.color} p-3 rounded-lg`}>
                   <Icon className="h-6 w-6 text-white" />
@@ -122,83 +164,186 @@ const AdminDashboard = () => {
       </div>
 
       {/* Main Content Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Activities */}
-        <div className="card">
-          <h2 className="text-xl font-bold text-[#8B4513] mb-4">Recent Activities</h2>
-          <div className="space-y-4">
-            {recentActivities.map((activity, index) => (
-              <div key={index} className="flex items-start space-x-3 pb-3 border-b last:border-0">
-                <div className={`p-2 rounded-full ${
-                  activity.type === 'add' ? 'bg-green-100 text-green-600' :
-                  activity.type === 'update' ? 'bg-blue-100 text-blue-600' :
-                  activity.type === 'alert' ? 'bg-red-100 text-red-600' :
-                  'bg-yellow-100 text-yellow-600'
-                }`}>
-                  {activity.type === 'add' && <ArrowTrendingUpIcon className="h-4 w-4" />}
-                  {activity.type === 'update' && <CubeIcon className="h-4 w-4" />}
-                  {activity.type === 'alert' && <ExclamationTriangleIcon className="h-4 w-4" />}
-                  {activity.type === 'sale' && <ArrowTrendingDownIcon className="h-4 w-4" />}
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm text-gray-800">{activity.text}</p>
-                  <p className="text-xs text-gray-500 mt-1">{activity.time}</p>
-                </div>
-              </div>
-            ))}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Recent Sales */}
+        <div className="card lg:col-span-2">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold text-[#8B4513]">Recent Sales</h2>
+            <button onClick={() => navigate('/sell')} className="text-sm text-blue-600 hover:underline">
+              View All →
+            </button>
           </div>
+          {recentSales.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">No sales today</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="min-w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Order No</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Customer</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Items</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Total</th>
+                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Time</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {recentSales.map((sale) => (
+                    <tr key={sale.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-2 text-sm font-medium">{sale.orderNumber}</td>
+                      <td className="px-4 py-2 text-sm">
+                        {sale.customerName || sale.customerMobile || '-'}
+                      </td>
+                      <td className="px-4 py-2 text-sm">{sale.items?.length || 0}</td>
+                      <td className="px-4 py-2 text-sm font-semibold text-green-600">₹{sale.totalAmount}</td>
+                      <td className="px-4 py-2 text-sm text-gray-500">
+                        {new Date(sale.createdAt).toLocaleTimeString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
-        {/* Quick Actions */}
-        <div className="card">
-          <h2 className="text-xl font-bold text-[#8B4513] mb-4">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <button
-              onClick={() => navigate('/products/add')}
-              className="p-4 bg-blue-50 rounded-lg text-center hover:bg-blue-100 transition-colors"
-            >
-              <ShoppingBagIcon className="h-8 w-8 mx-auto text-blue-600 mb-2" />
-              <span className="text-sm font-medium text-blue-700">Add Product</span>
-            </button>
-            <button
-              onClick={() => navigate('/inventory/update')}
-              className="p-4 bg-green-50 rounded-lg text-center hover:bg-green-100 transition-colors"
-            >
-              <ArchiveBoxIcon className="h-8 w-8 mx-auto text-green-600 mb-2" />
-              <span className="text-sm font-medium text-green-700">Update Stock</span>
-            </button>
-            <button
-              onClick={() => navigate('/alerts')}
-              className="p-4 bg-yellow-50 rounded-lg text-center hover:bg-yellow-100 transition-colors"
-            >
-              <ExclamationTriangleIcon className="h-8 w-8 mx-auto text-yellow-600 mb-2" />
-              <span className="text-sm font-medium text-yellow-700">View Alerts</span>
-            </button>
-            <button
-              onClick={() => navigate('/password-reset-requests')}
-              className={`p-4 rounded-lg text-center transition-colors relative ${
-                passwordResetCount > 0 
-                  ? 'bg-red-50 hover:bg-red-100' 
-                  : 'bg-orange-50 hover:bg-orange-100'
-              }`}
-            >
-              <KeyIcon className={`h-8 w-8 mx-auto mb-2 ${
-                passwordResetCount > 0 ? 'text-red-600' : 'text-orange-600'
-              }`} />
-              <span className={`text-sm font-medium ${
-                passwordResetCount > 0 ? 'text-red-700' : 'text-orange-700'
-              }`}>
-                Password Requests
-                {passwordResetCount > 0 && (
-                  <span className="ml-1 bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                    {passwordResetCount}
+        {/* Quick Actions & Alerts */}
+        <div className="space-y-6">
+          {/* Quick Actions */}
+          <div className="card">
+            <h2 className="text-xl font-bold text-[#8B4513] mb-4">Quick Actions</h2>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                onClick={() => navigate('/products/add')}
+                className="p-3 bg-blue-50 rounded-lg text-center hover:bg-blue-100 transition-colors"
+              >
+                <ShoppingBagIcon className="h-6 w-6 mx-auto text-blue-600 mb-1" />
+                <span className="text-xs font-medium text-blue-700">Add Product</span>
+              </button>
+              <button
+                onClick={() => navigate('/inventory/update')}
+                className="p-3 bg-green-50 rounded-lg text-center hover:bg-green-100 transition-colors"
+              >
+                <ArchiveBoxIcon className="h-6 w-6 mx-auto text-green-600 mb-1" />
+                <span className="text-xs font-medium text-green-700">Update Stock</span>
+              </button>
+              <button
+                onClick={() => navigate('/alerts')}
+                className="p-3 bg-yellow-50 rounded-lg text-center hover:bg-yellow-100 transition-colors relative"
+              >
+                <ExclamationTriangleIcon className="h-6 w-6 mx-auto text-yellow-600 mb-1" />
+                <span className="text-xs font-medium text-yellow-700">Alerts</span>
+                {lowStock.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                    {lowStock.length}
                   </span>
                 )}
-              </span>
+              </button>
+              <button
+                onClick={() => navigate('/sell')}
+                className="p-3 bg-purple-50 rounded-lg text-center hover:bg-purple-100 transition-colors"
+              >
+                <CurrencyRupeeIcon className="h-6 w-6 mx-auto text-purple-600 mb-1" />
+                <span className="text-xs font-medium text-purple-700">POS Sale</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Stock Overview */}
+          <div className="card">
+            <h2 className="text-xl font-bold text-[#8B4513] mb-4">Stock Overview</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600">In Stock</span>
+                </div>
+                <span className="font-semibold">{stockStatus.inStock}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600">Low Stock</span>
+                </div>
+                <span className="font-semibold text-yellow-600">{stockStatus.lowStockItems}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <span className="text-sm text-gray-600">Out of Stock</span>
+                </div>
+                <span className="font-semibold text-red-600">{stockStatus.outOfStock}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/products')}
+              className="w-full mt-4 text-sm text-blue-600 hover:underline"
+            >
+              View All Products →
             </button>
           </div>
+
+          {/* Password Reset Alert */}
+          {passwordResetCount > 0 && (
+            <div className="card border-l-4 border-orange-500">
+              <div className="flex items-center space-x-3 mb-2">
+                <KeyIcon className="h-6 w-6 text-orange-500" />
+                <h2 className="text-lg font-bold text-[#8B4513]">Pending Resets</h2>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">
+                There {passwordResetCount === 1 ? 'is 1 pending' : `are ${passwordResetCount} pending`} password reset request(s) from employees.
+              </p>
+              <Link to="/password-reset-requests" className="text-sm font-medium text-orange-600 hover:text-orange-800 flex items-center">
+                Review Requests <ArrowTrendingUpIcon className="h-4 w-4 ml-1" />
+              </Link>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* Low Stock Warning */}
+      {lowStock.length > 0 && (
+        <div className="card border-l-4 border-yellow-500 mt-6">
+          <div className="flex items-center space-x-3 mb-4">
+            <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500" />
+            <h2 className="text-xl font-bold text-[#8B4513]">Low Stock Alert</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Min Level</th>
+                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-200">
+                {lowStock.slice(0, 5).map((item) => (
+                  <tr key={item.id}>
+                    <td className="px-4 py-2 text-sm font-medium text-gray-900">{item.productName}</td>
+                    <td className="px-4 py-2 text-sm text-gray-600">{item.currentQuantity}</td>
+                    <td className="px-4 py-2 text-sm text-gray-600">{item.minStockLevel}</td>
+                    <td className="px-4 py-2">
+                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
+                        Low Stock
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {lowStock.length > 5 && (
+            <button
+              onClick={() => navigate('/inventory')}
+              className="mt-4 text-sm text-[#8B4513] hover:text-[#DAA520]"
+            >
+              View all {lowStock.length} low stock items →
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 };

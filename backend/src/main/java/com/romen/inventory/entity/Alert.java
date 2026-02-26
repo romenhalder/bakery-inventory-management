@@ -9,13 +9,12 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "alerts",
-        indexes = {
-                @Index(name = "idx_alerts_product", columnList = "product_id"),
-                @Index(name = "idx_alerts_type", columnList = "alert_type"),
-                @Index(name = "idx_alerts_status", columnList = "is_read"),
-                @Index(name = "idx_alerts_created", columnList = "created_at")
-        })
+@Table(name = "alerts", indexes = {
+        @Index(name = "idx_alerts_product", columnList = "product_id"),
+        @Index(name = "idx_alerts_type", columnList = "alert_type"),
+        @Index(name = "idx_alerts_status", columnList = "is_read"),
+        @Index(name = "idx_alerts_created", columnList = "created_at")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -27,7 +26,7 @@ public class Alert {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
+    @JoinColumn(name = "product_id", nullable = true)
     private Product product;
 
     @Enumerated(EnumType.STRING)
@@ -70,12 +69,13 @@ public class Alert {
     private LocalDateTime updatedAt;
 
     public enum AlertType {
-        LOW_STOCK,         // Stock below minimum level
-        OUT_OF_STOCK,      // No stock available
-        EXPIRING_SOON,     // Product expiring soon
-        EXPIRED,          // Product expired
-        REORDER_POINT,     // Stock reached reorder point
-        OVERSTOCK         // Stock above maximum level
+        LOW_STOCK, // Stock below minimum level
+        OUT_OF_STOCK, // No stock available
+        EXPIRING_SOON, // Product expiring soon
+        EXPIRED, // Product expired
+        REORDER_POINT, // Stock reached reorder point
+        OVERSTOCK, // Stock above maximum level
+        USER_PASSWORD_RESET// Employee/Manager requested password reset
     }
 
     public void markAsRead() {

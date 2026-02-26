@@ -6,6 +6,7 @@ import com.romen.inventory.exception.ResourceNotFoundException;
 import com.romen.inventory.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,7 +17,8 @@ import java.util.List;
 @Slf4j
 public class SupplierService {
 
-    private final SupplierRepository supplierRepository;
+    @Autowired
+    private SupplierRepository supplierRepository;
 
     @Transactional
     public Supplier createSupplier(Supplier supplier) {
@@ -45,7 +47,7 @@ public class SupplierService {
     @Transactional
     public Supplier updateSupplier(Long id, Supplier supplierDetails) {
         Supplier supplier = getSupplierById(id);
-        
+
         // Check email uniqueness if changed
         if (supplierDetails.getEmail() != null && !supplierDetails.getEmail().equals(supplier.getEmail())) {
             if (supplierRepository.existsByEmail(supplierDetails.getEmail())) {
@@ -60,6 +62,10 @@ public class SupplierService {
         supplier.setContactPerson(supplierDetails.getContactPerson());
         supplier.setContactPersonPhone(supplierDetails.getContactPersonPhone());
         supplier.setDescription(supplierDetails.getDescription());
+        supplier.setLicenseNumber(supplierDetails.getLicenseNumber());
+        if (supplierDetails.getActive() != null) {
+            supplier.setActive(supplierDetails.getActive());
+        }
 
         return supplierRepository.save(supplier);
     }
@@ -67,7 +73,7 @@ public class SupplierService {
     @Transactional
     public void deleteSupplier(Long id) {
         Supplier supplier = getSupplierById(id);
-        supplier.setIsActive(false);
+        supplier.setActive(false);
         supplierRepository.save(supplier);
     }
 

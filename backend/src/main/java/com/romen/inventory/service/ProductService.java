@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -73,17 +74,26 @@ public class ProductService {
                 .isActive(request.getIsActive())
                 .isSellable(request.getIsSellable())
                 .createdBy(createdBy)
-                .supplier(request.getSupplierId() != null ? 
-                        supplierRepository.findById(request.getSupplierId()).orElse(null) : null)
+                .supplier(request.getSupplierId() != null
+                        ? supplierRepository.findById(request.getSupplierId()).orElse(null)
+                        : null)
                 .build();
 
         product = productRepository.save(product);
 
-        // Create initial inventory record with zero quantity
+        // Get initial stock or default to 0
+        Integer initialStock = request.getInitialStock();
+        if (initialStock == null) {
+            initialStock = 0;
+        }
+
+        // Create initial inventory record with initial stock
         Inventory inventory = Inventory.builder()
                 .product(product)
-                .currentQuantity(0)
-                .isOutOfStock(true)
+                .currentQuantity(initialStock)
+                .availableQuantity(initialStock)
+                .isOutOfStock(initialStock <= 0)
+                .isLowStock(initialStock > 0 && initialStock <= product.getMinStockLevel())
                 .build();
         inventoryRepository.save(inventory);
 
@@ -187,10 +197,18 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
 
-        // Check if product has inventory transactions
-        // If yes, soft delete (mark as inactive)
+        // Soft delete the product
         product.setIsActive(false);
         productRepository.save(product);
+
+        // Zero out the inventory to reflect deletion
+        inventoryRepository.findByProductId(id).ifPresent(inventory -> {
+            inventory.setCurrentQuantity(0);
+            inventory.setAvailableQuantity(0);
+            inventory.setIsOutOfStock(true);
+            inventory.setIsLowStock(false);
+            inventoryRepository.save(inventory);
+        });
 
         // Delete image if exists
         if (product.getImageUrl() != null) {
@@ -216,11 +234,45 @@ public class ProductService {
                 .collect(Collectors.toList());
     }
 
+    public List<ProductResponse> filterProducts(Long categoryId, String brandName, String flavor,
+            Product.ProductType productType, BigDecimal minPrice, BigDecimal maxPrice) {
+        return productRepository.findAll().stream()
+                .filter(product -> {
+                    if (!product.getIsActive())
+                        return false;
+                    if (categoryId != null && !product.getCategory().getId().equals(categoryId))
+                        return false;
+                    if (brandName != null && !brandName.isEmpty() &&
+                            (product.getBrandName() == null
+                                    || !product.getBrandName().toLowerCase().contains(brandName.toLowerCase())))
+                        return false;
+                    if (flavor != null && !flavor.isEmpty() &&
+                            (product.getFlavor() == null
+                                    || !product.getFlavor().toLowerCase().contains(flavor.toLowerCase())))
+                        return false;
+                    if (productType != null && product.getProductType() != productType)
+                        return false;
+                    if (minPrice != null && (product.getPrice() == null || product.getPrice().compareTo(minPrice) < 0))
+                        return false;
+                    if (maxPrice != null && (product.getPrice() == null || product.getPrice().compareTo(maxPrice) > 0))
+                        return false;
+                    return true;
+                })
+                .map(product -> {
+                    Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
+                    return mapToProductResponse(product, inventory);
+                })
+                .collect(Collectors.toList());
+    }
+
     private ProductResponse mapToProductResponse(Product product, Inventory inventory) {
         return ProductResponse.builder()
                 .id(product.getId())
                 .name(product.getName())
                 .description(product.getDescription())
+                .sku(product.getSku())
+                .barcode(product.getBarcode())
+                .hsnCode(product.getHsnCode())
                 .productCode(product.getProductCode())
                 .categoryId(product.getCategory().getId())
                 .categoryName(product.getCategory().getName())
@@ -228,11 +280,16 @@ public class ProductService {
                 .unitOfMeasure(product.getUnitOfMeasure())
                 .price(product.getPrice())
                 .costPrice(product.getCostPrice())
+                .taxRate(product.getTaxRate())
+                .brandName(product.getBrandName())
+                .flavor(product.getFlavor())
+                .weight(product.getWeight())
                 .imageUrl(product.getImageUrl())
                 .minStockLevel(product.getMinStockLevel())
                 .maxStockLevel(product.getMaxStockLevel())
                 .reorderPoint(product.getReorderPoint())
                 .expiryDays(product.getExpiryDays())
+                .isPerishable(product.getIsPerishable())
                 .isActive(product.getIsActive())
                 .isSellable(product.getIsSellable())
                 .supplierId(product.getSupplier() != null ? product.getSupplier().getId() : null)

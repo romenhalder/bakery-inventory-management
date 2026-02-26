@@ -15,7 +15,7 @@ const ResetPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const API_URL = 'http://localhost:8080/api';
+  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     if (!token) {
@@ -47,7 +47,7 @@ const ResetPassword = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (password !== confirmPassword) {
       setError('Passwords do not match');
       return;

@@ -1,0 +1,16 @@
+# IDE
+.idea/
+*.iml
+
+# Logs
+*.log
+backend.log
+backend_running.log
+hs_err_pid*
+_nul
+
+# Node
+node_modules/
+
+# Build
+target/

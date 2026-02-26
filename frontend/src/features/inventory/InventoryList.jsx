@@ -7,6 +7,7 @@ import {
   MagnifyingGlassIcon,
   ArrowPathIcon,
   ExclamationTriangleIcon,
+  NoSymbolIcon,
 } from '@heroicons/react/24/outline';
 import { fetchInventory, fetchLowStock } from './inventorySlice';
 
@@ -14,7 +15,7 @@ const InventoryList = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { inventory, lowStock, loading } = useSelector((state) => state.inventory);
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('ALL');
 
@@ -25,8 +26,8 @@ const InventoryList = () => {
 
   const filteredInventory = inventory.filter((item) => {
     const matchesSearch = item.productName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.productCode?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      item.productCode?.toLowerCase().includes(searchTerm.toLowerCase());
+
     if (filterStatus === 'ALL') return matchesSearch;
     if (filterStatus === 'LOW') return matchesSearch && item.isLowStock;
     if (filterStatus === 'OUT') return matchesSearch && item.isOutOfStock;
@@ -97,7 +98,7 @@ const InventoryList = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="card bg-yellow-50 border-l-4 border-yellow-500">
           <div className="flex items-center justify-between">
             <div>
@@ -111,7 +112,7 @@ const InventoryList = () => {
             </div>
           </div>
         </div>
-        
+
         <div className="card bg-red-50 border-l-4 border-red-500">
           <div className="flex items-center justify-between">
             <div>
@@ -175,7 +176,7 @@ const InventoryList = () => {
                 filteredInventory.map((item) => {
                   const stockStatus = getStockStatus(item);
                   const StatusIcon = stockStatus.icon;
-                  
+
                   return (
                     <tr key={item.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -213,6 +214,13 @@ const InventoryList = () => {
                           title="Update Stock"
                         >
                           <ArrowPathIcon className="h-5 w-5" />
+                        </button>
+                        <button
+                          onClick={() => navigate('/inventory/update', { state: { productId: item.productId, defaultType: 'WASTAGE' } })}
+                          className="text-red-500 hover:text-red-700"
+                          title="Report Damaged / Wastage"
+                        >
+                          <NoSymbolIcon className="h-5 w-5" />
                         </button>
                       </td>
                     </tr>

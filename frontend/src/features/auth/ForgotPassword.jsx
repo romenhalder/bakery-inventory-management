@@ -9,7 +9,7 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const API_URL = 'http://localhost:8080/api';
+  const API_URL = 'http://localhost:8080';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

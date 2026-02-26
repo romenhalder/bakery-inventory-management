@@ -61,6 +61,9 @@ public class Inventory {
     @Column(name = "is_out_of_stock")
     private Boolean isOutOfStock = true;
 
+    @Version
+    private Long version;
+
     @Column(name = "location", length = 100)
     private String location;
 

@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/alerts")
+@RequestMapping("/alerts")
 @RequiredArgsConstructor
 public class AlertController {
 
@@ -86,7 +86,7 @@ public class AlertController {
     public ResponseEntity<AlertResponse> resolveAlert(
             @PathVariable Long id,
             Authentication authentication) {
-        
+
         User currentUser = (User) authentication.getPrincipal();
         AlertResponse alert = alertService.resolveAlert(id, currentUser);
         return ResponseEntity.ok(alert);

@@ -9,14 +9,15 @@ const StockUpdate = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const preselectedProductId = location.state?.productId;
-  
+  const defaultType = location.state?.defaultType || 'STOCK_IN';
+
   const { products } = useSelector((state) => state.products);
   const { loading, success, error } = useSelector((state) => state.inventory);
 
   const [formData, setFormData] = useState({
     productId: preselectedProductId || '',
     quantity: '',
-    type: 'STOCK_IN',
+    type: defaultType,
     reason: '',
     unitPrice: '',
     referenceNumber: '',
@@ -94,11 +95,10 @@ const StockUpdate = () => {
             ].map((type) => (
               <label
                 key={type.value}
-                className={`cursor-pointer p-3 rounded-lg border-2 text-center transition-all ${
-                  formData.type === type.value
-                    ? 'border-[#8B4513] bg-[#FDF5E6]'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
+                className={`cursor-pointer p-3 rounded-lg border-2 text-center transition-all ${formData.type === type.value
+                  ? 'border-[#8B4513] bg-[#FDF5E6]'
+                  : 'border-gray-200 hover:border-gray-300'
+                  }`}
               >
                 <input
                   type="radio"
@@ -227,10 +227,9 @@ const StockUpdate = () => {
               <p><span className="text-gray-600">Current Stock:</span> {selectedProduct.currentStock || 0}</p>
               <p>
                 <span className="text-gray-600">New Stock:</span>{' '}
-                <span className={`font-medium ${
-                  formData.type === 'STOCK_IN' ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {formData.type === 'STOCK_IN' 
+                <span className={`font-medium ${['STOCK_IN', 'ADJUSTMENT'].includes(formData.type) ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                  {['STOCK_IN', 'ADJUSTMENT'].includes(formData.type)
                     ? (selectedProduct.currentStock || 0) + parseInt(formData.quantity || 0)
                     : (selectedProduct.currentStock || 0) - parseInt(formData.quantity || 0)
                   }
@@ -239,7 +238,7 @@ const StockUpdate = () => {
               {formData.unitPrice && (
                 <p>
                   <span className="text-gray-600">Total Amount:</span>{' '}
-                  ${(parseFloat(formData.unitPrice) * parseInt(formData.quantity)).toFixed(2)}
+                  ₹{(parseFloat(formData.unitPrice) * parseInt(formData.quantity)).toFixed(2)}
                 </p>
               )}
             </div>
@@ -258,13 +257,12 @@ const StockUpdate = () => {
           <button
             type="submit"
             disabled={loading}
-            className={`px-6 py-2 rounded-lg text-white font-medium ${
-              formData.type === 'STOCK_IN' 
-                ? 'bg-green-600 hover:bg-green-700' 
-                : formData.type === 'STOCK_OUT'
+            className={`px-6 py-2 rounded-lg text-white font-medium ${formData.type === 'STOCK_IN'
+              ? 'bg-green-600 hover:bg-green-700'
+              : formData.type === 'STOCK_OUT'
                 ? 'bg-red-600 hover:bg-red-700'
                 : 'bg-blue-600 hover:bg-blue-700'
-            }`}
+              }`}
           >
             {loading ? (
               <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>

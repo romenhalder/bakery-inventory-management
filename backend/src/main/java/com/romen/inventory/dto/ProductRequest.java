@@ -56,4 +56,6 @@ public class ProductRequest {
     private Boolean isSellable = true;
 
     private Long supplierId;
+
+    private Integer initialStock;
 }

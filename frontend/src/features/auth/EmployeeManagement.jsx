@@ -56,33 +56,33 @@ const EmployeeManagement = () => {
 
   const validateForm = () => {
     const errors = {};
-    
+
     if (!formData.fullName.trim()) {
       errors.fullName = 'Full name is required';
     }
-    
+
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       errors.email = 'Invalid email format';
     }
-    
+
     if (!formData.phone.trim()) {
       errors.phone = 'Phone number is required';
     } else if (!/^[0-9]{10,15}$/.test(formData.phone)) {
       errors.phone = 'Phone must be 10-15 digits';
     }
-    
+
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 6) {
       errors.password = 'Password must be at least 6 characters';
     }
-    
+
     if (formData.password !== formData.confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
-    
+
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -163,6 +163,7 @@ const EmployeeManagement = () => {
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Employee</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Contact</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Role</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Created</th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>
@@ -171,7 +172,7 @@ const EmployeeManagement = () => {
             <tbody className="bg-white divide-y divide-gray-200">
               {loading ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center">
+                  <td colSpan="6" className="px-6 py-4 text-center">
                     <div className="flex justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B4513]"></div>
                     </div>
@@ -179,7 +180,7 @@ const EmployeeManagement = () => {
                 </tr>
               ) : employees?.length === 0 ? (
                 <tr>
-                  <td colSpan="5" className="px-6 py-4 text-center text-gray-500">
+                  <td colSpan="6" className="px-6 py-4 text-center text-gray-500">
                     No employees found. Add your first employee using the button above.
                   </td>
                 </tr>
@@ -202,11 +203,18 @@ const EmployeeManagement = () => {
                       <div className="text-sm text-gray-500">{employee.address || 'No address'}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        employee.isActive 
-                          ? 'bg-green-100 text-green-800' 
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${employee.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' :
+                          employee.role === 'MANAGER' ? 'bg-blue-100 text-blue-800' :
+                            'bg-gray-100 text-gray-800'
+                        }`}>
+                        {employee.role || 'EMPLOYEE'}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${employee.isActive
+                          ? 'bg-green-100 text-green-800'
                           : 'bg-red-100 text-red-800'
-                      }`}>
+                        }`}>
                         {employee.isActive ? (
                           <>
                             <CheckCircleIcon className="h-4 w-4 mr-1" />
@@ -271,7 +279,7 @@ const EmployeeManagement = () => {
                   <p className="text-sm text-red-600">{submitError}</p>
                 </div>
               )}
-              
+
               <div>
                 <label className="block text-sm font-medium text-gray-700">Full Name *</label>
                 <input
@@ -279,9 +287,8 @@ const EmployeeManagement = () => {
                   name="fullName"
                   value={formData.fullName}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${validationErrors.fullName ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                 />
                 {validationErrors.fullName && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -300,9 +307,8 @@ const EmployeeManagement = () => {
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${validationErrors.email ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                 />
                 {validationErrors.email && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -321,9 +327,8 @@ const EmployeeManagement = () => {
                   name="phone"
                   value={formData.phone}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${validationErrors.phone ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                 />
                 {validationErrors.phone && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -368,9 +373,8 @@ const EmployeeManagement = () => {
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${validationErrors.password ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                 />
                 {validationErrors.password && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">
@@ -389,9 +393,8 @@ const EmployeeManagement = () => {
                   name="confirmPassword"
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${
-                    validationErrors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
+                  className={`mt-1 block w-full rounded-md shadow-sm focus:border-[#8B4513] focus:ring focus:ring-[#8B4513] focus:ring-opacity-50 ${validationErrors.confirmPassword ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                    }`}
                 />
                 {validationErrors.confirmPassword && (
                   <p className="mt-1 text-sm text-red-600 flex items-center">

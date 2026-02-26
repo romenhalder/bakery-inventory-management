@@ -7,12 +7,11 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "otp_logs",
-        indexes = {
-                @Index(name = "idx_otp_logs_email", columnList = "email"),
-                @Index(name = "idx_otp_logs_phone", columnList = "phone"),
-                @Index(name = "idx_otp_logs_expiry", columnList = "expires_at")
-        })
+@Table(name = "otp_logs", indexes = {
+        @Index(name = "idx_otp_logs_email", columnList = "email"),
+        @Index(name = "idx_otp_logs_phone", columnList = "phone"),
+        @Index(name = "idx_otp_logs_expiry", columnList = "expires_at")
+})
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -36,9 +35,11 @@ public class OtpLog {
     @Enumerated(EnumType.STRING)
     private OtpType otpType;
 
+    @Builder.Default
     @Column(name = "is_used")
     private Boolean isUsed = false;
 
+    @Builder.Default
     @Column
     private Integer attempts = 0;
 

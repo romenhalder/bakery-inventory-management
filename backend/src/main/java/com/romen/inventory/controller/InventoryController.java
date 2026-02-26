@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/inventory")
+@RequestMapping("/inventory")
 @RequiredArgsConstructor
 public class InventoryController {
 
@@ -55,7 +55,7 @@ public class InventoryController {
     public ResponseEntity<InventoryResponse> updateStock(
             @Valid @RequestBody StockUpdateRequest request,
             Authentication authentication) {
-        
+
         User currentUser = (User) authentication.getPrincipal();
         InventoryResponse response = inventoryService.updateStock(request, currentUser);
         return ResponseEntity.ok(response);

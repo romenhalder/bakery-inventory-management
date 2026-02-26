@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/categories")
+@RequestMapping("/categories")
 @RequiredArgsConstructor
 public class CategoryController {
 
@@ -27,8 +27,7 @@ public class CategoryController {
             @Valid @ModelAttribute CategoryRequest request,
             Authentication authentication) {
 
-        com.romen.inventory.entity.User currentUser =
-                (com.romen.inventory.entity.User) authentication.getPrincipal();
+        com.romen.inventory.entity.User currentUser = (com.romen.inventory.entity.User) authentication.getPrincipal();
 
         CategoryResponse response = categoryService.createCategory(request, currentUser);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
