@@ -23,35 +23,35 @@ public class InventoryController {
     private final InventoryService inventoryService;
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<InventoryResponse>> getAllInventory() {
         List<InventoryResponse> inventory = inventoryService.getAllInventory();
         return ResponseEntity.ok(inventory);
     }
 
     @GetMapping("/product/{productId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<InventoryResponse> getInventoryByProduct(@PathVariable Long productId) {
         InventoryResponse inventory = inventoryService.getInventoryByProduct(productId);
         return ResponseEntity.ok(inventory);
     }
 
     @GetMapping("/low-stock")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<InventoryResponse>> getLowStockItems() {
         List<InventoryResponse> items = inventoryService.getLowStockItems();
         return ResponseEntity.ok(items);
     }
 
     @GetMapping("/out-of-stock")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<InventoryResponse>> getOutOfStockItems() {
         List<InventoryResponse> items = inventoryService.getOutOfStockItems();
         return ResponseEntity.ok(items);
     }
 
     @PostMapping("/update")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<InventoryResponse> updateStock(
             @Valid @RequestBody StockUpdateRequest request,
             Authentication authentication) {
@@ -62,21 +62,21 @@ public class InventoryController {
     }
 
     @GetMapping("/transactions")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<StockTransactionResponse>> getAllTransactions() {
         List<StockTransactionResponse> transactions = inventoryService.getAllTransactions();
         return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/transactions/product/{productId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<StockTransactionResponse>> getTransactionsByProduct(@PathVariable Long productId) {
         List<StockTransactionResponse> transactions = inventoryService.getTransactionsByProduct(productId);
         return ResponseEntity.ok(transactions);
     }
 
     @GetMapping("/transactions/recent")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<StockTransactionResponse>> getRecentTransactions() {
         List<StockTransactionResponse> transactions = inventoryService.getRecentTransactions();
         return ResponseEntity.ok(transactions);

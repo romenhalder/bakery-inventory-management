@@ -19,6 +19,7 @@ const RawMaterialList = () => {
     const canEdit = isAdmin || isManager;
 
     const [searchTerm, setSearchTerm] = useState('');
+    const [sortOrder, setSortOrder] = useState('newest');
 
     useEffect(() => {
         dispatch(fetchProducts());
@@ -42,7 +43,7 @@ const RawMaterialList = () => {
         }
     };
 
-    // Filter only raw materials
+    // Filter only raw materials (explicitly by productType)
     const rawMaterials = products.filter((p) => p.productType === 'RAW_MATERIAL');
 
     // Apply search term filter on client side for raw materials specifically
@@ -52,8 +53,13 @@ const RawMaterialList = () => {
         (m.sku && m.sku.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
+    const sortedMaterials = [...filteredMaterials].sort((a, b) => {
+        if (sortOrder === 'newest') return (b.id || 0) - (a.id || 0);
+        return (a.id || 0) - (b.id || 0);
+    });
+
     const getStockStatus = (product) => {
-        if (product.isOutOfStock || product.currentStock <= 0) {
+        if (product.currentStock === 0 || product.isOutOfStock || product.currentStock < 0) {
             return { text: 'Out of Stock', class: 'bg-red-100 text-red-800' };
         } else if (product.isLowStock || product.currentStock <= product.minStockLevel) {
             return { text: 'Low Stock', class: 'bg-yellow-100 text-yellow-800' };
@@ -92,11 +98,18 @@ const RawMaterialList = () => {
                     <button type="submit" className="btn-secondary">
                         Search
                     </button>
+                    <button
+                        type="button"
+                        onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+                        className="btn-secondary whitespace-nowrap"
+                    >
+                        {sortOrder === 'newest' ? '⬇️ Newest' : '⬆️ Oldest'}
+                    </button>
                 </form>
             </div>
 
             <div className="text-sm text-gray-600">
-                Showing {filteredMaterials.length} raw materials
+                Showing {sortedMaterials.length} raw materials
             </div>
 
             <div className="card overflow-hidden">
@@ -120,12 +133,12 @@ const RawMaterialList = () => {
                                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B4513] mx-auto"></div>
                                     </td>
                                 </tr>
-                            ) : filteredMaterials.length === 0 ? (
+                            ) : sortedMaterials.length === 0 ? (
                                 <tr>
                                     <td colSpan="7" className="px-6 py-4 text-center text-gray-500">No raw materials found</td>
                                 </tr>
                             ) : (
-                                filteredMaterials.map((material) => {
+                                sortedMaterials.map((material) => {
                                     const stockStatus = getStockStatus(material);
                                     return (
                                         <tr key={material.id} className="hover:bg-gray-50">

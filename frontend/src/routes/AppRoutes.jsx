@@ -18,6 +18,7 @@ import Reports from '../features/reports/Reports';
 import SellProduct from '../features/sales/SellProduct';
 import CategoryList from '../pages/CategoryList';
 import SupplierList from '../pages/SupplierList';
+import TransactionHistory from '../pages/TransactionHistory';
 import NotFound from '../pages/NotFound';
 
 const AppRoutes = () => {
@@ -49,6 +50,7 @@ const AppRoutes = () => {
         <Route path="reports" element={<Reports />} />
         <Route path="employees" element={<EmployeeManagement />} />
         <Route path="sell" element={<SellProduct />} />
+        <Route path="transactions" element={<TransactionHistory />} />
       </Route>
 
       {/* 404 */}

@@ -150,25 +150,7 @@ public class InventoryService {
 
     @Transactional
     public void checkAndCreateAlerts(Product product, Inventory inventory, Integer previousQty, Integer newQty) {
-        // Check for low stock
-        if (newQty <= product.getMinStockLevel()) {
-            boolean hasAlert = alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(),
-                    Alert.AlertType.LOW_STOCK);
-            if (!hasAlert) {
-                createAlert(product, Alert.AlertType.LOW_STOCK,
-                        "Low stock alert: " + product.getName() + " has only " + newQty + " units remaining",
-                        newQty, product.getMinStockLevel());
-            }
-        } else {
-            alertRepository.findByProductIdOrderByCreatedAtDesc(product.getId()).stream()
-                    .filter(a -> a.getAlertType() == Alert.AlertType.LOW_STOCK && !a.getIsResolved())
-                    .forEach(a -> {
-                        a.setIsResolved(true);
-                        alertRepository.save(a);
-                    });
-        }
-
-        // Check for out of stock
+        // Check for out of stock FIRST (qty = 0 means out of stock, NOT low stock)
         if (newQty <= 0) {
             boolean hasAlert = alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(),
                     Alert.AlertType.OUT_OF_STOCK);
@@ -177,13 +159,40 @@ public class InventoryService {
                         "Out of stock: " + product.getName() + " is now out of stock",
                         newQty, 0);
             }
+            // Also auto-resolve any low stock alerts since it's now out of stock
+            alertRepository.findByProductIdOrderByCreatedAtDesc(product.getId()).stream()
+                    .filter(a -> a.getAlertType() == Alert.AlertType.LOW_STOCK && !a.getIsResolved())
+                    .forEach(a -> {
+                        a.setIsResolved(true);
+                        alertRepository.save(a);
+                    });
         } else {
+            // Resolve out-of-stock alerts if stock is back
             alertRepository.findByProductIdOrderByCreatedAtDesc(product.getId()).stream()
                     .filter(a -> a.getAlertType() == Alert.AlertType.OUT_OF_STOCK && !a.getIsResolved())
                     .forEach(a -> {
                         a.setIsResolved(true);
                         alertRepository.save(a);
                     });
+
+            // Check for low stock (only when qty > 0 but below minStockLevel)
+            if (newQty <= product.getMinStockLevel()) {
+                boolean hasAlert = alertRepository.existsByProductIdAndAlertTypeAndIsResolvedFalse(product.getId(),
+                        Alert.AlertType.LOW_STOCK);
+                if (!hasAlert) {
+                    createAlert(product, Alert.AlertType.LOW_STOCK,
+                            "Low stock alert: " + product.getName() + " has only " + newQty + " units remaining",
+                            newQty, product.getMinStockLevel());
+                }
+            } else {
+                // Resolve low stock alerts if stock is above threshold
+                alertRepository.findByProductIdOrderByCreatedAtDesc(product.getId()).stream()
+                        .filter(a -> a.getAlertType() == Alert.AlertType.LOW_STOCK && !a.getIsResolved())
+                        .forEach(a -> {
+                            a.setIsResolved(true);
+                            alertRepository.save(a);
+                        });
+            }
         }
 
         // Check for reorder point

@@ -22,9 +22,9 @@ public class CategoryController {
     private final CategoryService categoryService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<CategoryResponse> createCategory(
-            @Valid @ModelAttribute CategoryRequest request,
+            @Valid @RequestBody CategoryRequest request,
             Authentication authentication) {
 
         com.romen.inventory.entity.User currentUser = (com.romen.inventory.entity.User) authentication.getPrincipal();
@@ -34,59 +34,59 @@ public class CategoryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<CategoryResponse>> getAllCategories() {
         List<CategoryResponse> categories = categoryService.getAllCategories();
         return ResponseEntity.ok(categories);
     }
 
     @GetMapping("/main")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<CategoryResponse>> getMainCategories() {
         List<CategoryResponse> categories = categoryService.getMainCategories();
         return ResponseEntity.ok(categories);
     }
 
     @GetMapping("/tree")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<CategoryTreeResponse>> getCategoryTree() {
         List<CategoryTreeResponse> tree = categoryService.getCategoryTree();
         return ResponseEntity.ok(tree);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<CategoryResponse> getCategoryById(@PathVariable Long id) {
         CategoryResponse category = categoryService.getCategoryById(id);
         return ResponseEntity.ok(category);
     }
 
     @GetMapping("/parent/{parentId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<CategoryResponse>> getSubcategories(@PathVariable Long parentId) {
         List<CategoryResponse> subcategories = categoryService.getSubcategories(parentId);
         return ResponseEntity.ok(subcategories);
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<List<CategoryResponse>> searchCategories(@RequestParam String keyword) {
         List<CategoryResponse> categories = categoryService.searchCategories(keyword);
         return ResponseEntity.ok(categories);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'EMPLOYEE')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
     public ResponseEntity<CategoryResponse> updateCategory(
             @PathVariable Long id,
-            @Valid @ModelAttribute CategoryRequest request) {
+            @Valid @RequestBody CategoryRequest request) {
 
         CategoryResponse response = categoryService.updateCategory(id, request);
         return ResponseEntity.ok(response);
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<CategoryResponse> toggleCategoryStatus(
             @PathVariable Long id,
             @RequestParam boolean isActive) {
@@ -96,7 +96,7 @@ public class CategoryController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();

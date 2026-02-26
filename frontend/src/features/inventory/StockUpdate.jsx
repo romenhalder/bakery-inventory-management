@@ -26,6 +26,10 @@ const StockUpdate = () => {
     notes: '',
   });
 
+  // Price verification state for STOCK_IN
+  const [showPriceChange, setShowPriceChange] = useState(false);
+  const [newCostPrice, setNewCostPrice] = useState('');
+
   useEffect(() => {
     dispatch(fetchProducts());
     return () => {
@@ -43,14 +47,28 @@ const StockUpdate = () => {
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+
+    // Reset price change when product changes
+    if (name === 'productId') {
+      setShowPriceChange(false);
+      setNewCostPrice('');
+    }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    dispatch(updateStock(formData));
+    const submitData = { ...formData };
+
+    // If price changed on stock in, send the new cost price as unitPrice
+    if (formData.type === 'STOCK_IN' && showPriceChange && newCostPrice) {
+      submitData.unitPrice = parseFloat(newCostPrice);
+    }
+
+    dispatch(updateStock(submitData));
   };
 
   const selectedProduct = products.find(p => p.id === parseInt(formData.productId));
+  const isRawMaterial = selectedProduct?.productType === 'RAW_MATERIAL';
 
   return (
     <div className="max-w-2xl mx-auto">
@@ -76,10 +94,17 @@ const StockUpdate = () => {
             <option value="">Choose a product</option>
             {products.map((product) => (
               <option key={product.id} value={product.id}>
-                {product.name} (Current: {product.currentStock || 0} {product.unitOfMeasure || 'units'})
+                {product.name} {product.productType === 'RAW_MATERIAL' ? '(Raw)' : ''} (Current: {product.currentStock || 0} {product.unitOfMeasure || 'units'})
               </option>
             ))}
           </select>
+          {selectedProduct && (
+            <div className="mt-2 p-2 bg-blue-50 rounded text-xs text-blue-700">
+              <strong>{selectedProduct.name}</strong> • Type: {selectedProduct.productType === 'RAW_MATERIAL' ? 'Raw Material' : 'Finished Good'}
+              {selectedProduct.costPrice && ` • Cost: ₹${selectedProduct.costPrice}`}
+              {!isRawMaterial && selectedProduct.sellingPrice && ` • Sell: ₹${selectedProduct.sellingPrice}`}
+            </div>
+          )}
         </div>
 
         {/* Transaction Type */}
@@ -138,10 +163,57 @@ const StockUpdate = () => {
           )}
         </div>
 
-        {/* Unit Price (for sales) */}
-        {formData.type === 'STOCK_OUT' && (
+        {/* STOCK_IN: Price Verification */}
+        {formData.type === 'STOCK_IN' && selectedProduct && (
+          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-blue-800">Price Verification</p>
+                <p className="text-xs text-blue-600">Current cost price: <strong>₹{selectedProduct.costPrice || 0}</strong></p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  checked={!showPriceChange}
+                  onChange={() => { setShowPriceChange(false); setNewCostPrice(''); }}
+                  className="text-[#8B4513]"
+                />
+                Same price (₹{selectedProduct.costPrice || 0})
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="radio"
+                  checked={showPriceChange}
+                  onChange={() => setShowPriceChange(true)}
+                  className="text-[#8B4513]"
+                />
+                Different price
+              </label>
+            </div>
+            {showPriceChange && (
+              <div>
+                <label className="block text-sm font-medium text-blue-700">New Cost Price (for this batch)</label>
+                <input
+                  type="number"
+                  value={newCostPrice}
+                  onChange={(e) => setNewCostPrice(e.target.value)}
+                  step="0.01"
+                  min="0"
+                  className="input-field mt-1"
+                  placeholder="Enter new cost price per unit"
+                />
+                <p className="text-xs text-blue-500 mt-1">This updates only the cost for the newly added quantity.</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Unit Price / Selling Price (for STOCK_OUT) — HIDDEN for raw materials */}
+        {formData.type === 'STOCK_OUT' && !isRawMaterial && (
           <div>
-            <label className="block text-sm font-medium text-gray-700">Unit Price (Optional)</label>
+            <label className="block text-sm font-medium text-gray-700">Unit Selling Price (Optional)</label>
             <input
               type="number"
               name="unitPrice"
@@ -151,6 +223,15 @@ const StockUpdate = () => {
               className="input-field mt-1"
               placeholder="Enter unit price for this sale"
             />
+          </div>
+        )}
+
+        {/* Raw material stock out notice */}
+        {formData.type === 'STOCK_OUT' && isRawMaterial && (
+          <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-sm text-yellow-700">
+              ℹ️ <strong>Raw Material</strong> — No selling price required for raw materials. Stock will be deducted at cost price.
+            </p>
           </div>
         )}
 
@@ -235,6 +316,12 @@ const StockUpdate = () => {
                   }
                 </span>
               </p>
+              {showPriceChange && newCostPrice && (
+                <p>
+                  <span className="text-gray-600">New Cost Price:</span>{' '}
+                  <span className="font-medium text-blue-600">₹{newCostPrice}</span> (for {formData.quantity} units)
+                </p>
+              )}
               {formData.unitPrice && (
                 <p>
                   <span className="text-gray-600">Total Amount:</span>{' '}

@@ -21,7 +21,7 @@ const ProductList = () => {
   const isAdmin = user?.role === 'ADMIN';
   const isManager = user?.role === 'MANAGER';
   const canEdit = isAdmin || isManager;
-  
+
   const [searchTerm, setSearchTerm] = useState('');
   const [filterType, setFilterType] = useState('ALL');
   const [filterCategory, setFilterCategory] = useState('');
@@ -30,6 +30,7 @@ const ProductList = () => {
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [showFilters, setShowFilters] = useState(false);
+  const [sortOrder, setSortOrder] = useState('newest'); // newest or oldest
 
   useEffect(() => {
     dispatch(fetchProducts());
@@ -75,14 +76,19 @@ const ProductList = () => {
   });
 
   const getStockStatus = (product) => {
-    if (product.isOutOfStock) {
+    if (product.currentStock === 0 || product.isOutOfStock || product.currentStock < 0) {
       return { text: 'Out of Stock', class: 'bg-red-100 text-red-800' };
-    } else if (product.isLowStock) {
+    } else if (product.isLowStock || product.currentStock <= product.minStockLevel) {
       return { text: 'Low Stock', class: 'bg-yellow-100 text-yellow-800' };
     } else {
       return { text: 'In Stock', class: 'bg-green-100 text-green-800' };
     }
   };
+
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    if (sortOrder === 'newest') return (b.id || 0) - (a.id || 0);
+    return (a.id || 0) - (b.id || 0);
+  });
 
   return (
     <div className="space-y-6">
@@ -114,6 +120,13 @@ const ProductList = () => {
           </div>
           <button type="submit" className="btn-secondary">
             Search
+          </button>
+          <button
+            type="button"
+            onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+            className="btn-secondary flex items-center space-x-1 whitespace-nowrap"
+          >
+            <span>{sortOrder === 'newest' ? '⬇️ Newest' : '⬆️ Oldest'}</span>
           </button>
           <button
             type="button"
@@ -213,7 +226,7 @@ const ProductList = () => {
 
       {/* Results count */}
       <div className="text-sm text-gray-600">
-        Showing {filteredProducts.length} of {products.length} products
+        Showing {sortedProducts.length} of {products.length} products
       </div>
 
       {/* Products Table */}
@@ -260,15 +273,16 @@ const ProductList = () => {
                     </div>
                   </td>
                 </tr>
-              ) : filteredProducts.length === 0 ? (
+              ) : sortedProducts.length === 0 ? (
                 <tr>
                   <td colSpan="9" className="px-6 py-4 text-center text-gray-500">
                     No products found
                   </td>
                 </tr>
               ) : (
-                filteredProducts.map((product) => {
+                sortedProducts.map((product) => {
                   const stockStatus = getStockStatus(product);
+                  const isRaw = product.productType === 'RAW_MATERIAL';
                   return (
                     <tr key={product.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
@@ -305,11 +319,10 @@ const ProductList = () => {
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          product.productType === 'FINISHED_GOOD'
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${product.productType === 'FINISHED_GOOD'
                             ? 'bg-blue-100 text-blue-800'
                             : 'bg-purple-100 text-purple-800'
-                        }`}>
+                          }`}>
                           {product.productType === 'FINISHED_GOOD' ? 'Finished' : 'Raw Material'}
                         </span>
                       </td>
@@ -317,9 +330,14 @@ const ProductList = () => {
                         <div className="text-gray-600">
                           ₹{product.costPrice || 0}
                         </div>
-                        <div className="font-medium text-gray-900">
-                          ₹{product.price || 0}
-                        </div>
+                        {!isRaw && (
+                          <div className="font-medium text-gray-900">
+                            ₹{product.price || 0}
+                          </div>
+                        )}
+                        {isRaw && (
+                          <div className="text-xs text-gray-400 italic">Not for sale</div>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                         {product.currentStock} {product.unitOfMeasure}

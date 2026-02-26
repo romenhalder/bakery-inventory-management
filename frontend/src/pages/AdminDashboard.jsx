@@ -12,6 +12,7 @@ import {
   KeyIcon,
   CurrencyRupeeIcon,
   ClockIcon,
+  EyeIcon,
 } from '@heroicons/react/24/outline';
 import axios from 'axios';
 import { fetchProducts } from '../features/products/productSlice';
@@ -29,6 +30,9 @@ const AdminDashboard = () => {
   const [passwordResetCount, setPasswordResetCount] = useState(0);
   const [todaySales, setTodaySales] = useState({ totalSales: 0, transactionCount: 0 });
   const [recentSales, setRecentSales] = useState([]);
+  const [expandedSale, setExpandedSale] = useState(null);
+
+  const isAdmin = user?.role === 'ADMIN';
 
   const API_URL = 'http://localhost:8080';
 
@@ -37,7 +41,7 @@ const AdminDashboard = () => {
     dispatch(fetchInventory());
     dispatch(fetchLowStock());
     dispatch(fetchUnreadAlerts());
-    fetchPasswordResetCount();
+    if (isAdmin) fetchPasswordResetCount();
     fetchTodaySales();
     fetchRecentSales();
   }, [dispatch]);
@@ -66,7 +70,7 @@ const AdminDashboard = () => {
 
   const fetchRecentSales = async () => {
     try {
-      const response = await axios.get(`${API_URL}/sales/recent?limit=5`, {
+      const response = await axios.get(`${API_URL}/sales/recent?limit=10`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setRecentSales(response.data);
@@ -88,7 +92,7 @@ const AdminDashboard = () => {
       value: todaySales.transactionCount || 0,
       icon: ChartBarIcon,
       color: 'bg-blue-500',
-      link: '/sell',
+      link: '/transactions',
     },
     {
       title: 'Total Products',
@@ -104,29 +108,38 @@ const AdminDashboard = () => {
       color: lowStock.length > 0 ? 'bg-red-500' : 'bg-green-500',
       link: '/alerts',
     },
-    {
+    ...(isAdmin ? [{
       title: 'Password Requests',
       value: passwordResetCount,
       icon: KeyIcon,
       color: passwordResetCount > 0 ? 'bg-orange-500' : 'bg-gray-400',
       link: '/password-reset-requests',
-    }
+    }] : []),
   ];
 
   const getStockStatus = () => {
-    const outOfStock = products.filter(p => p.isOutOfStock).length;
-    const lowStockItems = products.filter(p => p.isLowStock).length;
+    const outOfStock = products.filter(p => p.currentStock === 0 || p.isOutOfStock).length;
+    const lowStockItems = products.filter(p => p.currentStock > 0 && (p.isLowStock || p.currentStock <= p.minStockLevel)).length;
     const inStock = products.length - outOfStock - lowStockItems;
     return { outOfStock, lowStockItems, inStock };
   };
 
   const stockStatus = getStockStatus();
 
+  const getItemStockBadge = (item) => {
+    if (item.currentQuantity === 0 || item.currentQuantity <= 0) {
+      return { text: 'Out of Stock', class: 'bg-red-100 text-red-800' };
+    }
+    return { text: 'Low Stock', class: 'bg-yellow-100 text-yellow-800' };
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold text-[#8B4513]">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-[#8B4513]">
+            {isAdmin ? 'Admin' : 'Manager'} Dashboard
+          </h1>
           <p className="text-gray-500">Welcome back, {user?.fullName}!</p>
         </div>
         <div className="flex gap-2">
@@ -165,11 +178,11 @@ const AdminDashboard = () => {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Recent Sales */}
+        {/* Recent Sales - Expanded with full details */}
         <div className="card lg:col-span-2">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold text-[#8B4513]">Recent Sales</h2>
-            <button onClick={() => navigate('/sell')} className="text-sm text-blue-600 hover:underline">
+            <button onClick={() => navigate('/transactions')} className="text-sm text-blue-600 hover:underline">
               View All →
             </button>
           </div>
@@ -180,26 +193,65 @@ const AdminDashboard = () => {
               <table className="min-w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Order No</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Customer</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Items</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Total</th>
-                    <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Time</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Order</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Customer</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Items</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Total</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Sold By</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Payment</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Time</th>
+                    <th className="px-3 py-2 text-left text-xs font-medium text-gray-500"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
                   {recentSales.map((sale) => (
-                    <tr key={sale.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-2 text-sm font-medium">{sale.orderNumber}</td>
-                      <td className="px-4 py-2 text-sm">
-                        {sale.customerName || sale.customerMobile || '-'}
-                      </td>
-                      <td className="px-4 py-2 text-sm">{sale.items?.length || 0}</td>
-                      <td className="px-4 py-2 text-sm font-semibold text-green-600">₹{sale.totalAmount}</td>
-                      <td className="px-4 py-2 text-sm text-gray-500">
-                        {new Date(sale.createdAt).toLocaleTimeString()}
-                      </td>
-                    </tr>
+                    <>
+                      <tr key={sale.id} className="hover:bg-gray-50">
+                        <td className="px-3 py-2 text-sm font-medium">{sale.orderNumber}</td>
+                        <td className="px-3 py-2 text-sm">
+                          <div>{sale.customerName || '-'}</div>
+                          {sale.customerMobile && (
+                            <div className="text-xs text-gray-400">{sale.customerMobile}</div>
+                          )}
+                        </td>
+                        <td className="px-3 py-2 text-sm">{sale.items?.length || 0} items</td>
+                        <td className="px-3 py-2 text-sm font-semibold text-green-600">₹{sale.totalAmount}</td>
+                        <td className="px-3 py-2 text-sm text-gray-600">{sale.soldByName || '-'}</td>
+                        <td className="px-3 py-2 text-sm">
+                          <span className="px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-700">
+                            {sale.paymentMethod || 'CASH'}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-sm text-gray-500">
+                          {new Date(sale.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="px-3 py-2">
+                          <button
+                            onClick={() => setExpandedSale(expandedSale === sale.id ? null : sale.id)}
+                            className="text-gray-400 hover:text-[#8B4513]"
+                          >
+                            <EyeIcon className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                      {expandedSale === sale.id && sale.items && (
+                        <tr key={`${sale.id}-details`}>
+                          <td colSpan="8" className="px-3 py-2 bg-[#FDF5E6]">
+                            <div className="text-xs font-medium text-gray-600 mb-1">Item Details:</div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-1">
+                              {sale.items.map((item, idx) => (
+                                <div key={idx} className="flex justify-between text-xs bg-white px-2 py-1 rounded">
+                                  <span>{item.productName}</span>
+                                  <span className="text-gray-600">
+                                    {item.quantity} × ₹{item.unitPrice} = <span className="font-semibold">₹{item.totalPrice}</span>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))}
                 </tbody>
               </table>
@@ -283,15 +335,15 @@ const AdminDashboard = () => {
             </button>
           </div>
 
-          {/* Password Reset Alert */}
-          {passwordResetCount > 0 && (
+          {/* Password Reset Alert - Admin Only */}
+          {isAdmin && passwordResetCount > 0 && (
             <div className="card border-l-4 border-orange-500">
               <div className="flex items-center space-x-3 mb-2">
                 <KeyIcon className="h-6 w-6 text-orange-500" />
                 <h2 className="text-lg font-bold text-[#8B4513]">Pending Resets</h2>
               </div>
               <p className="text-sm text-gray-600 mb-3">
-                There {passwordResetCount === 1 ? 'is 1 pending' : `are ${passwordResetCount} pending`} password reset request(s) from employees.
+                There {passwordResetCount === 1 ? 'is 1 pending' : `are ${passwordResetCount} pending`} password reset request(s).
               </p>
               <Link to="/password-reset-requests" className="text-sm font-medium text-orange-600 hover:text-orange-800 flex items-center">
                 Review Requests <ArrowTrendingUpIcon className="h-4 w-4 ml-1" />
@@ -306,7 +358,7 @@ const AdminDashboard = () => {
         <div className="card border-l-4 border-yellow-500 mt-6">
           <div className="flex items-center space-x-3 mb-4">
             <ExclamationTriangleIcon className="h-6 w-6 text-yellow-500" />
-            <h2 className="text-xl font-bold text-[#8B4513]">Low Stock Alert</h2>
+            <h2 className="text-xl font-bold text-[#8B4513]">Stock Alerts</h2>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full">
@@ -319,18 +371,21 @@ const AdminDashboard = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
-                {lowStock.slice(0, 5).map((item) => (
-                  <tr key={item.id}>
-                    <td className="px-4 py-2 text-sm font-medium text-gray-900">{item.productName}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{item.currentQuantity}</td>
-                    <td className="px-4 py-2 text-sm text-gray-600">{item.minStockLevel}</td>
-                    <td className="px-4 py-2">
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                        Low Stock
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {lowStock.slice(0, 5).map((item) => {
+                  const badge = getItemStockBadge(item);
+                  return (
+                    <tr key={item.id}>
+                      <td className="px-4 py-2 text-sm font-medium text-gray-900">{item.productName}</td>
+                      <td className="px-4 py-2 text-sm text-gray-600">{item.currentQuantity}</td>
+                      <td className="px-4 py-2 text-sm text-gray-600">{item.minStockLevel}</td>
+                      <td className="px-4 py-2">
+                        <span className={`px-2 py-1 text-xs font-medium rounded-full ${badge.class}`}>
+                          {badge.text}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -339,7 +394,7 @@ const AdminDashboard = () => {
               onClick={() => navigate('/inventory')}
               className="mt-4 text-sm text-[#8B4513] hover:text-[#DAA520]"
             >
-              View all {lowStock.length} low stock items →
+              View all {lowStock.length} stock alert items →
             </button>
           )}
         </div>

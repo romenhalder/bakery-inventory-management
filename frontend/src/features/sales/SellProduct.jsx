@@ -3,6 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { fetchProducts, searchProducts } from '../products/productSlice';
 import {
   addToCart,
+  updateCartItem,
   removeFromCart,
   clearCart,
   createSale,
@@ -93,7 +94,7 @@ const SellProduct = () => {
   const handleQuantityChange = (productId, quantity, newQty) => {
     const product = products.find(p => p.id === productId);
     if (newQty > 0 && newQty <= (product?.availableStock || 0)) {
-      dispatch(addToCart({ product, quantity: newQty }));
+      dispatch(updateCartItem({ productId, quantity: newQty }));
     } else if (newQty <= 0) {
       dispatch(removeFromCart(productId));
     }
@@ -158,7 +159,7 @@ const SellProduct = () => {
   };
 
   const filteredProducts = products.filter(p =>
-    p.isActive && p.isSellable && (p.availableStock > 0)
+    p.isActive && p.isSellable && (p.availableStock > 0) && p.productType !== 'RAW_MATERIAL'
   );
 
   // Focus search on Ctrl+K

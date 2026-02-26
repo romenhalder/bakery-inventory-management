@@ -6,11 +6,13 @@ import com.romen.inventory.dto.ProductResponse;
 import com.romen.inventory.entity.Category;
 import com.romen.inventory.entity.Inventory;
 import com.romen.inventory.entity.Product;
+import com.romen.inventory.entity.StockTransaction;
 import com.romen.inventory.entity.User;
 import com.romen.inventory.exception.ResourceNotFoundException;
 import com.romen.inventory.repository.CategoryRepository;
 import com.romen.inventory.repository.InventoryRepository;
 import com.romen.inventory.repository.ProductRepository;
+import com.romen.inventory.repository.StockTransactionRepository;
 import com.romen.inventory.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ public class ProductService {
     private final ProductRepository productRepository;
     private final CategoryRepository categoryRepository;
     private final InventoryRepository inventoryRepository;
+    private final StockTransactionRepository stockTransactionRepository;
     private final SupplierRepository supplierRepository;
     private final FileStorageService fileStorageService;
 
@@ -96,6 +99,24 @@ public class ProductService {
                 .isLowStock(initialStock > 0 && initialStock <= product.getMinStockLevel())
                 .build();
         inventoryRepository.save(inventory);
+
+        // Log initial stock as STOCK_IN transaction
+        if (initialStock > 0) {
+            StockTransaction transaction = StockTransaction.builder()
+                    .product(product)
+                    .transactionType(StockTransaction.TransactionType.STOCK_IN)
+                    .quantity(initialStock)
+                    .previousQuantity(0)
+                    .newQuantity(initialStock)
+                    .unitPrice(request.getCostPrice())
+                    .reason("Initial stock at product creation")
+                    .referenceNumber("NEW-" + product.getProductCode())
+                    .user(createdBy)
+                    .supplier(product.getSupplier())
+                    .notes("Product created with initial stock of " + initialStock)
+                    .build();
+            stockTransactionRepository.save(transaction);
+        }
 
         return mapToProductResponse(product, inventory);
     }

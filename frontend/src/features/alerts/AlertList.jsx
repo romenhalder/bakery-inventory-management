@@ -21,6 +21,7 @@ const AlertList = () => {
   const dispatch = useDispatch();
   const { alerts, unreadAlerts, unreadCount, loading } = useSelector((state) => state.alerts);
   const [filter, setFilter] = useState('ALL');
+  const [sortOrder, setSortOrder] = useState('newest');
 
   useEffect(() => {
     dispatch(fetchAlerts());
@@ -33,6 +34,12 @@ const AlertList = () => {
     if (filter === 'READ') return alert.isRead;
     if (filter === 'UNRESOLVED') return !alert.isResolved;
     return alert.alertType === filter;
+  });
+
+  const sortedAlerts = [...filteredAlerts].sort((a, b) => {
+    const dateA = new Date(a.createdAt);
+    const dateB = new Date(b.createdAt);
+    return sortOrder === 'newest' ? dateB - dateA : dateA - dateB;
   });
 
   const getAlertIcon = (type) => {
@@ -116,15 +123,20 @@ const AlertList = () => {
           <button
             key={option.value}
             onClick={() => setFilter(option.value)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === option.value
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === option.value
                 ? 'bg-[#8B4513] text-white'
                 : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+              }`}
           >
             {option.label}
           </button>
         ))}
+        <button
+          onClick={() => setSortOrder(sortOrder === 'newest' ? 'oldest' : 'newest')}
+          className="px-4 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 ml-auto"
+        >
+          {sortOrder === 'newest' ? '⬇️ Newest' : '⬆️ Oldest'}
+        </button>
       </div>
 
       {/* Alerts List */}
@@ -134,19 +146,18 @@ const AlertList = () => {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#8B4513] mx-auto"></div>
             <p className="mt-2 text-gray-600">Loading alerts...</p>
           </div>
-        ) : filteredAlerts.length === 0 ? (
+        ) : sortedAlerts.length === 0 ? (
           <div className="card text-center py-12">
             <CheckCircleIcon className="h-16 w-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-xl font-semibold text-gray-900">No Alerts</h3>
             <p className="text-gray-600 mt-2">Everything looks good! No alerts to display.</p>
           </div>
         ) : (
-          filteredAlerts.map((alert) => (
+          sortedAlerts.map((alert) => (
             <div
               key={alert.id}
-              className={`card border-l-4 ${getAlertColor(alert.alertType)} ${
-                !alert.isRead ? 'shadow-md' : 'opacity-75'
-              }`}
+              className={`card border-l-4 ${getAlertColor(alert.alertType)} ${!alert.isRead ? 'shadow-md' : 'opacity-75'
+                }`}
             >
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
@@ -187,13 +198,12 @@ const AlertList = () => {
                   </div>
 
                   <div className="mt-3 flex items-center space-x-4 text-sm text-gray-500">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      alert.alertType === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-800' :
-                      alert.alertType === 'OUT_OF_STOCK' ? 'bg-red-100 text-red-800' :
-                      alert.alertType === 'EXPIRING_SOON' ? 'bg-orange-100 text-orange-800' :
-                      alert.alertType === 'EXPIRED' ? 'bg-red-100 text-red-800' :
-                      'bg-blue-100 text-blue-800'
-                    }`}>
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${alert.alertType === 'LOW_STOCK' ? 'bg-yellow-100 text-yellow-800' :
+                        alert.alertType === 'OUT_OF_STOCK' ? 'bg-red-100 text-red-800' :
+                          alert.alertType === 'EXPIRING_SOON' ? 'bg-orange-100 text-orange-800' :
+                            alert.alertType === 'EXPIRED' ? 'bg-red-100 text-red-800' :
+                              'bg-blue-100 text-blue-800'
+                      }`}>
                       {alert.alertType.replace(/_/g, ' ')}
                     </span>
                     {alert.currentQuantity !== null && (

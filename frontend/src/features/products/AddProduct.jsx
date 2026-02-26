@@ -13,6 +13,40 @@ const UNIT_OPTIONS = [
   { value: 'PACK', label: 'Pack' },
 ];
 
+const BRAND_OPTIONS = [
+  // Premium Brands
+  'Royal Oven', 'Sweet Palace', 'Golden Crumb', 'Cake Mahal', 'The Frosted Crown',
+  'Urban Bakers', 'Velvet Bakes',
+  // Budget / Daily Fresh
+  'Daily Delight', 'Fresh Bite Bakery', 'Oven Fresh', 'Happy Treats',
+  'Sweet Time', 'Bake & Take',
+  // Designer / Custom
+  'Dream Layers', 'Signature Cakes', 'Celebration Studio', 'Cake Couture', 'Elite Bakes',
+  // Other
+  'Amul', 'Britannia', 'Haldirams', 'Local Bakery', 'Homemade',
+];
+
+const FLAVOR_OPTIONS = [
+  // Chocolate
+  { group: '🍫 Chocolate', items: ['Chocolate Truffle', 'Dark Chocolate', 'Belgian Chocolate', 'Chocolate Fudge', 'Chocolate Chips', 'Chocolate Hazelnut', 'Chocolate Almond', 'Chocolate Oreo', 'Chocolate KitKat', 'Chocolate Ferrero Rocher'] },
+  // Fruit
+  { group: '🍓 Fruit', items: ['Strawberry', 'Pineapple', 'Mango', 'Mixed Fruit', 'Blueberry', 'Black Forest', 'White Forest', 'Litchi', 'Orange', 'Kiwi'] },
+  // Indian Special
+  { group: '🥭 Indian Special', items: ['Kesar Pista', 'Rasmalai Cake', 'Gulab Jamun Cake', 'Butterscotch', 'Paan Cake', 'Gulkand Cake', 'Rabri Cake', 'Motichoor Cake', 'Coconut', 'Elaichi Cream Cake'] },
+  // Premium & Trending
+  { group: '🍰 Premium', items: ['Red Velvet', 'Tiramisu', 'Coffee Mocha', 'Lotus Biscoff', 'Salted Caramel', 'Nutella', 'Ferrero Rocher', 'Oreo Cookies & Cream', 'German Chocolate', 'Choco Lava'] },
+  // Cheesecake
+  { group: '🧀 Cheesecake', items: ['Blueberry Cheesecake', 'Strawberry Cheesecake', 'Mango Cheesecake', 'Baked Cheesecake', 'Oreo Cheesecake', 'Chocolate Cheesecake'] },
+  // Pastry
+  { group: '🍪 Pastry', items: ['Chocolate Pastry', 'Pineapple Pastry', 'Butterscotch Pastry', 'Red Velvet Pastry', 'Black Forest Pastry', 'Fresh Fruit Pastry', 'KitKat Pastry', 'Rasmalai Pastry'] },
+  // Basics
+  { group: '🧁 Basic', items: ['Vanilla', 'Plain', 'Butter', 'Honey'] },
+  // Festival Special
+  { group: '🎉 Festival', items: ['Diwali Dry Fruit Cake', 'Christmas Plum Cake', 'Eid Sheer Khurma Cake', 'Valentine Heart Red Velvet', 'Holi Thandai Cake'] },
+  // Eggless
+  { group: '🥛 Eggless', items: ['Eggless Chocolate', 'Eggless Pineapple', 'Eggless Butterscotch', 'Eggless Red Velvet', 'Jain Cake'] },
+];
+
 const AddProduct = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -33,7 +67,15 @@ const AddProduct = () => {
     initialStock: '',
     costPrice: '',
     price: '',
-    pricingType: 'PER_UNIT', // PER_UNIT or TOTAL_BULK
+    pricingType: 'PER_UNIT',
+    brandName: '',
+    flavor: '',
+    minStockLevel: 10,
+    maxStockLevel: 1000,
+    reorderPoint: 20,
+    supplierId: '',
+    manualSupplierName: '',
+    manualSupplierContact: '',
   });
 
   // Full Form
@@ -164,6 +206,15 @@ const AddProduct = () => {
       data.append('initialStock', formData.initialStock || '0');
       data.append('isActive', 'true');
       data.append('isSellable', isRaw ? 'false' : 'true');
+      if (formData.brandName) data.append('brandName', formData.brandName);
+      if (formData.flavor) data.append('flavor', formData.flavor);
+      data.append('minStockLevel', formData.minStockLevel || 10);
+      data.append('maxStockLevel', formData.maxStockLevel || 1000);
+      data.append('reorderPoint', formData.reorderPoint || 20);
+      if (formData.supplierId) data.append('supplierId', formData.supplierId);
+      if (!formData.supplierId && formData.manualSupplierName) {
+        data.append('notes', `Supplier: ${formData.manualSupplierName}${formData.manualSupplierContact ? ' | Contact: ' + formData.manualSupplierContact : ''}`);
+      }
     } else {
       Object.keys(formData).forEach((key) => {
         if (key === 'image' && formData[key]) {
@@ -362,25 +413,160 @@ const AddProduct = () => {
               )}
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                {quickForm.pricingType === 'TOTAL_BULK' ? 'Total Selling Price' : 'Unit Selling Price'}
-              </label>
-              <input
-                type="number"
-                name="price"
-                value={quickForm.price}
+            {quickForm.productType !== 'RAW_MATERIAL' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  {quickForm.pricingType === 'TOTAL_BULK' ? 'Total Selling Price' : 'Unit Selling Price'}
+                </label>
+                <input
+                  type="number"
+                  name="price"
+                  value={quickForm.price}
+                  onChange={handleQuickChange}
+                  step="0.01"
+                  className="input-field mt-1"
+                  placeholder="₹0.00"
+                />
+                {quickForm.pricingType === 'TOTAL_BULK' && quickForm.initialStock > 0 && quickForm.price && (
+                  <p className="text-xs text-gray-500 mt-1">Per unit price: ₹{(parseFloat(quickForm.price) / parseFloat(quickForm.initialStock)).toFixed(2)}</p>
+                )}
+              </div>
+            )}
+
+            {/* Brand & Flavor - only for finished goods */}
+            {quickForm.productType !== 'RAW_MATERIAL' && (
+              <>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Brand</label>
+                  <select
+                    name="brandName"
+                    value={quickForm.brandName}
+                    onChange={handleQuickChange}
+                    className="input-field mt-1"
+                  >
+                    <option value="">Select Brand (Optional)</option>
+                    {BRAND_OPTIONS.map((brand) => (
+                      <option key={brand} value={brand}>{brand}</option>
+                    ))}
+                    <option value="__custom">✏️ Custom / Other</option>
+                  </select>
+                  {quickForm.brandName === '__custom' && (
+                    <input
+                      type="text"
+                      name="brandName"
+                      value=""
+                      onChange={handleQuickChange}
+                      className="input-field mt-2"
+                      placeholder="Enter custom brand name"
+                    />
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Flavor</label>
+                  <select
+                    name="flavor"
+                    value={quickForm.flavor}
+                    onChange={handleQuickChange}
+                    className="input-field mt-1"
+                  >
+                    <option value="">Select Flavor (Optional)</option>
+                    {FLAVOR_OPTIONS.map((group) => (
+                      <optgroup key={group.group} label={group.group}>
+                        {group.items.map((flavor) => (
+                          <option key={flavor} value={flavor}>{flavor}</option>
+                        ))}
+                      </optgroup>
+                    ))}
+                  </select>
+                </div>
+              </>
+            )}
+
+            {/* Threshold Fields */}
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-gray-700 mb-2">📊 Stock Thresholds</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs text-gray-500">Min Stock Level</label>
+                  <input
+                    type="number"
+                    name="minStockLevel"
+                    value={quickForm.minStockLevel}
+                    onChange={handleQuickChange}
+                    min="0"
+                    className="input-field mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500">Max Stock Level</label>
+                  <input
+                    type="number"
+                    name="maxStockLevel"
+                    value={quickForm.maxStockLevel}
+                    onChange={handleQuickChange}
+                    min="0"
+                    className="input-field mt-1"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-500">Reorder Point</label>
+                  <input
+                    type="number"
+                    name="reorderPoint"
+                    value={quickForm.reorderPoint}
+                    onChange={handleQuickChange}
+                    min="0"
+                    className="input-field mt-1"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-gray-400 mt-1">Alert will trigger when stock falls below min level or reorder point.</p>
+            </div>
+
+            {/* Supplier Selection */}
+            <div className="md:col-span-2">
+              <p className="text-sm font-medium text-gray-700 mb-2">🚚 Supplier</p>
+              <select
+                name="supplierId"
+                value={quickForm.supplierId}
                 onChange={handleQuickChange}
-                step="0.01"
-                className="input-field mt-1"
-                placeholder="₹0.00"
-              />
-              {quickForm.pricingType === 'TOTAL_BULK' && quickForm.initialStock > 0 && quickForm.price && (
-                <p className="text-xs text-gray-500 mt-1">Per unit price: ₹{(parseFloat(quickForm.price) / parseFloat(quickForm.initialStock)).toFixed(2)}</p>
+                className="input-field"
+              >
+                <option value="">Select Supplier (Optional)</option>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} {s.phone ? `(${s.phone})` : ''}</option>
+                ))}
+              </select>
+              {!quickForm.supplierId && (
+                <div className="grid grid-cols-2 gap-4 mt-2">
+                  <div>
+                    <label className="block text-xs text-gray-500">Supplier Name (if not in list)</label>
+                    <input
+                      type="text"
+                      name="manualSupplierName"
+                      value={quickForm.manualSupplierName}
+                      onChange={handleQuickChange}
+                      className="input-field mt-1"
+                      placeholder="e.g., Sharma Flour Mill"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-500">Supplier Contact</label>
+                    <input
+                      type="text"
+                      name="manualSupplierContact"
+                      value={quickForm.manualSupplierContact}
+                      onChange={handleQuickChange}
+                      className="input-field mt-1"
+                      placeholder="e.g., 9876543210"
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </div>
         )}
+
 
         {/* Full Add Mode - Minimal version */}
         {(mode === 'full' || isEditMode) && (
