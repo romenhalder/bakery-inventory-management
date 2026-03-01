@@ -22,6 +22,13 @@ public class ReportController {
     @Autowired
     private ReportService reportService;
 
+    @GetMapping("/analytics")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<Map<String, Object>> getAnalytics() {
+        Map<String, Object> analytics = reportService.generateAnalytics();
+        return ResponseEntity.ok(analytics);
+    }
+
     @GetMapping("/stock")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Map<String, Object>> getStockReport(

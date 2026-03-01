@@ -102,6 +102,12 @@ A comprehensive full-stack inventory management solution designed for bakeries �
 - Search by product, user, or reference number
 - Summary statistics cards (total in, out, wastage, count)
 
+### 📊 Analytics & Reports
+- **Business Insights**: Real-time sales KPIs (Today, This Week, This Month) and Top Selling Products.
+- **Visual Dashboards**: CSS-based stock health donuts and category breakdown charts.
+- **Detailed Reports**: Comprehensive Stock, Sales, and Usage reports with customizable date ranges.
+- **PDF & CSV Exports**: One-click, auto-formatted, client-side PDF downloads (via `jsPDF`) and CSV exports for all reports.
+
 ### 🔽 Sorting & Navigation
 - **Newest records first** by default across all lists
 - **One-click sort toggle** (⬇️ Newest / ⬆️ Oldest) on every list page
@@ -138,6 +144,7 @@ A comprehensive full-stack inventory management solution designed for bakeries �
 | Axios | latest | HTTP client |
 | Heroicons | 2 | Icons |
 | Headless UI | latest | Accessible components |
+| jsPDF | latest | PDF generation |
 
 ---
 
@@ -315,9 +322,10 @@ bakery-inventory-management/
 ### Reports
 | Method | Endpoint | Description | Access |
 |--------|----------|-------------|--------|
+| GET | `/reports/analytics` | Business Analytics | Admin, Manager |
 | GET | `/reports/stock` | Stock report | Admin, Manager |
-| GET | `/reports/transactions` | Transaction report | Admin, Manager |
-| GET | `/reports/low-stock` | Low stock report | Admin, Manager |
+| GET | `/reports/sales` | Sales report | Admin, Manager |
+| GET | `/reports/usage` | Usage report | Admin, Manager |
 
 ---
 

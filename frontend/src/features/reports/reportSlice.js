@@ -19,6 +19,18 @@ api.interceptors.request.use((config) => {
 });
 
 // Async thunks
+export const fetchAnalytics = createAsyncThunk(
+  'reports/fetchAnalytics',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get('/reports/analytics');
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || 'Failed to fetch analytics');
+    }
+  }
+);
+
 export const fetchStockReport = createAsyncThunk(
   'reports/fetchStock',
   async ({ startDate, endDate }, { rejectWithValue }) => {
@@ -100,6 +112,7 @@ export const downloadReportCSV = createAsyncThunk(
 const reportSlice = createSlice({
   name: 'reports',
   initialState: {
+    analytics: null,
     stockReport: null,
     salesReport: null,
     usageReport: null,
@@ -122,6 +135,19 @@ const reportSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
+      // Analytics
+      .addCase(fetchAnalytics.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAnalytics.fulfilled, (state, action) => {
+        state.loading = false;
+        state.analytics = action.payload;
+      })
+      .addCase(fetchAnalytics.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       // Stock report
       .addCase(fetchStockReport.pending, (state) => {
         state.loading = true;
@@ -192,3 +218,4 @@ const reportSlice = createSlice({
 
 export const { clearError, clearSuccess, clearReports } = reportSlice.actions;
 export default reportSlice.reducer;
+
