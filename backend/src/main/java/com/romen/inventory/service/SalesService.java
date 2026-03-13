@@ -27,6 +27,7 @@ public class SalesService {
     private final ProductRepository productRepository;
     private final InventoryRepository inventoryRepository;
     private final StockTransactionRepository stockTransactionRepository;
+    private final AlertService alertService;
 
     @Transactional
     public SalesResponse createSale(SalesRequest request, User currentUser) {
@@ -122,12 +123,7 @@ public class SalesService {
     }
 
     private void checkAndCreateStockAlerts(Product product, Inventory inventory, int newQty) {
-        if (newQty <= product.getMinStockLevel() && newQty > 0) {
-            log.warn("Low stock alert for product: {} - Quantity: {}", product.getName(), newQty);
-        }
-        if (newQty <= 0) {
-            log.warn("Out of stock alert for product: {}", product.getName());
-        }
+        alertService.checkAndCreateStockAlerts(product, newQty);
     }
 
     @Transactional(readOnly = true)

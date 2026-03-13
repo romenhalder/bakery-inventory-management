@@ -6,6 +6,7 @@ import alertReducer from '../features/alerts/alertSlice';
 import reportReducer from '../features/reports/reportSlice';
 import salesReducer from '../features/sales/salesSlice';
 import supplierReducer from '../features/auth/supplierSlice';
+import bookingReducer from '../features/bookings/bookingSlice';
 
 export const store = configureStore({
   reducer: {
@@ -16,6 +17,7 @@ export const store = configureStore({
     reports: reportReducer,
     sales: salesReducer,
     suppliers: supplierReducer,
+    bookings: bookingReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

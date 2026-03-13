@@ -19,6 +19,8 @@ import SellProduct from '../features/sales/SellProduct';
 import CategoryList from '../pages/CategoryList';
 import SupplierList from '../pages/SupplierList';
 import TransactionHistory from '../pages/TransactionHistory';
+import BookingDashboard from '../features/bookings/BookingDashboard';
+import CatalogManagement from '../features/bookings/CatalogManagement';
 import NotFound from '../pages/NotFound';
 
 const AppRoutes = () => {
@@ -51,6 +53,8 @@ const AppRoutes = () => {
         <Route path="employees" element={<EmployeeManagement />} />
         <Route path="sell" element={<SellProduct />} />
         <Route path="transactions" element={<TransactionHistory />} />
+        <Route path="bookings" element={<BookingDashboard />} />
+        <Route path="bookings/catalog" element={<CatalogManagement />} />
       </Route>
 
       {/* 404 */}

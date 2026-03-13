@@ -24,6 +24,8 @@ A comprehensive full-stack inventory management solution designed for bakeries �
 - Shopping cart with add/remove/quantity controls
 - Customer name & mobile tracking with recent customer suggestions
 - Payment method selection (Cash, UPI, Card, etc.)
+- Professional animated payment success screen
+- Downloadable PDF Tax Invoice/Bill after payment completion
 - Auto-generated order numbers
 - Raw materials automatically excluded from billing
 
@@ -32,7 +34,7 @@ A comprehensive full-stack inventory management solution designed for bakeries �
 - **22+ bakery brands** (Royal Oven, Sweet Palace, Cake Mahal, etc.)
 - **80+ flavor options** across 9 categories (Chocolate, Fruit, Indian Special, Premium, Cheesecake, Pastry, Festival, Eggless, Basic)
 - Product categories with hierarchical structure
-- Image upload for products
+- Image upload via local file picker (JPG/PNG/GIF)
 - Custom stock thresholds (min stock, max stock, reorder point)
 - Expiry date tracking
 - Brand & flavor tagging
@@ -56,28 +58,35 @@ A comprehensive full-stack inventory management solution designed for bakeries �
 
 ### 🔔 Smart Alert System
 - **Out of Stock** alerts (quantity = 0)
-- **Low Stock** alerts (quantity > 0 but below minimum threshold)
+- **Low Stock** alerts (quantity > 0 but below min threshold)
 - Reorder point notifications
-- Expiring soon warnings (7 days)
-- Expired product alerts
-- Unread count badge in navbar
-- Mark as read / Mark all as read
+- Expiring soon warnings & Expired product alerts
+- **Real-time auto-generation** during sales and stock adjustments
+- **Background Scheduled Scanner** ensuring no missed alerts
+- Unread count badge in navbar & one-click resolution
+
+### 📅 Advance Cake Booking & Catalog
+- **Interactive Cake Catalog**: Visual gallery of cake designs.
+- Image uploads exclusively via local file picker (`multipart/form-data`).
+- Advance booking functionality (custom cakes for Birthdays, Reception, Anniversary, Corporate, etc.).
+- Partial (30-60%) or Full advance payment options.
+- Visual kanban-style stats tracking (Pending, In Progress, Ready, Delivered).
 
 ### 👥 Role-Based Access Control
 | Feature                    | Admin | Manager | Employee |
 |----------------------------|:-----:|:-------:|:--------:|
 | Dashboard                  |  ✅   |   ✅    |    ✅    |
 | POS / Sell Products        |  ✅   |   ✅    |    ✅    |
+| Advance Bookings & Catalog |  ✅   |   ✅    |    ✅    |
 | View Products & Inventory  |  ✅   |   ✅    |    ✅    |
 | Add / Edit Products        |  ✅   |   ✅    |    ❌    |
 | Manage Categories          |  ✅   |   ✅    |    ❌    |
 | Stock Updates              |  ✅   |   ✅    |    ✅    |
 | Manage Suppliers           |  ✅   |   ✅    |    ❌    |
-| View Reports               |  ✅   |   ✅    |    ❌    |
+| View / Download Reports    |  ✅   |   ✅    |    ❌    |
 | Transaction History        |  ✅   |   ✅    |    ❌    |
 | Manage Alerts              |  ✅   |   ✅    |    ✅    |
-| Create Employees           |  ✅   |   ❌    |    ❌    |
-| Reset Passwords            |  ✅   |   ❌    |    ❌    |
+| Create / Edit Employees    |  ✅   |   ❌    |    ❌    |
 
 ### 📈 Dashboards
 
@@ -102,11 +111,11 @@ A comprehensive full-stack inventory management solution designed for bakeries �
 - Search by product, user, or reference number
 - Summary statistics cards (total in, out, wastage, count)
 
-### 📊 Analytics & Reports
+### 📊 Analytics & Reports (Admin & Manager)
 - **Business Insights**: Real-time sales KPIs (Today, This Week, This Month) and Top Selling Products.
 - **Visual Dashboards**: CSS-based stock health donuts and category breakdown charts.
 - **Detailed Reports**: Comprehensive Stock, Sales, and Usage reports with customizable date ranges.
-- **PDF & CSV Exports**: One-click, auto-formatted, client-side PDF downloads (via `jsPDF`) and CSV exports for all reports.
+- **PDF & CSV Exports**: One-click, auto-formatted, professional PDF downloads (via `jsPDF`) and CSV exports for all reports.
 
 ### 🔽 Sorting & Navigation
 - **Newest records first** by default across all lists

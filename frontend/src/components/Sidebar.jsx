@@ -14,6 +14,8 @@ import {
   TagIcon,
   TruckIcon,
   ClipboardDocumentListIcon,
+  CalendarDaysIcon,
+  CakeIcon,
   ChevronDownIcon,
   ChevronRightIcon,
 } from '@heroicons/react/24/outline';
@@ -25,7 +27,7 @@ const Sidebar = () => {
   const isManager = user?.role === 'MANAGER';
   const isAdminOrManager = isAdmin || isManager;
 
-  const [openGroups, setOpenGroups] = useState({ products: true, management: true });
+  const [openGroups, setOpenGroups] = useState({ products: true, management: true, bookings: true });
 
   const toggleGroup = (group) => {
     setOpenGroups((prev) => ({ ...prev, [group]: !prev[group] }));
@@ -56,6 +58,15 @@ const Sidebar = () => {
     { to: '/alerts', icon: ExclamationTriangleIcon, label: 'Alerts' },
   ];
 
+  const bookingGroup = {
+    label: 'Bookings',
+    icon: CalendarDaysIcon,
+    links: [
+      { to: '/bookings', icon: CalendarDaysIcon, label: 'Advance Orders' },
+      ...(isAdminOrManager ? [{ to: '/bookings/catalog', icon: CakeIcon, label: 'Cake Catalog' }] : []),
+    ],
+  };
+
   const managementGroup = isAdminOrManager ? {
     label: 'Management',
     icon: ChartBarIcon,
@@ -78,11 +89,10 @@ const Sidebar = () => {
       <NavLink
         key={link.to}
         to={link.to}
-        className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-          isActive
-            ? 'bg-[#8B4513] text-white shadow-md'
-            : 'text-gray-700 hover:bg-[#FDF5E6] hover:text-[#8B4513]'
-        }`}
+        className={`flex items-center px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${isActive
+          ? 'bg-[#8B4513] text-white shadow-md'
+          : 'text-gray-700 hover:bg-[#FDF5E6] hover:text-[#8B4513]'
+          }`}
       >
         <Icon className="h-5 w-5 mr-3 flex-shrink-0" />
         <span>{link.label}</span>
@@ -102,9 +112,8 @@ const Sidebar = () => {
       <div key={groupKey} className="space-y-1">
         <button
           onClick={() => toggleGroup(groupKey)}
-          className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
-            hasActiveChild ? 'bg-[#FDF5E6] text-[#8B4513]' : 'text-gray-600 hover:bg-gray-100'
-          }`}
+          className={`flex items-center justify-between w-full px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${hasActiveChild ? 'bg-[#FDF5E6] text-[#8B4513]' : 'text-gray-600 hover:bg-gray-100'
+            }`}
         >
           <div className="flex items-center">
             <GroupIcon className="h-5 w-5 mr-3 flex-shrink-0" />
@@ -143,6 +152,15 @@ const Sidebar = () => {
 
         {inventoryLinks.map(renderLink)}
 
+        {bookingGroup && (
+          <>
+            <div className="pt-2 pb-1">
+              <div className="border-t border-gray-200"></div>
+            </div>
+            {renderGroup(bookingGroup, 'bookings')}
+          </>
+        )}
+
         {managementGroup && (
           <>
             <div className="pt-2 pb-1">
@@ -155,9 +173,8 @@ const Sidebar = () => {
 
       <div className="w-64 p-4 border-t bg-gray-50">
         <div className="flex items-center space-x-2 text-sm">
-          <div className={`w-2.5 h-2.5 rounded-full ${
-            isAdmin ? 'bg-green-500' : isManager ? 'bg-purple-500' : 'bg-blue-500'
-          }`} />
+          <div className={`w-2.5 h-2.5 rounded-full ${isAdmin ? 'bg-green-500' : isManager ? 'bg-purple-500' : 'bg-blue-500'
+            }`} />
           <span className="text-gray-600 font-medium">
             {isAdmin ? 'Administrator' : isManager ? 'Manager' : 'Employee'}
           </span>

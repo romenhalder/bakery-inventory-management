@@ -314,6 +314,35 @@ const AddProduct = () => {
             </div>
 
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Product Type *</label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setQuickForm({ ...quickForm, productType: 'FINISHED_GOOD' })}
+                  className={`flex-1 py-2.5 px-3 rounded-lg border-2 text-sm font-semibold text-center transition-all ${quickForm.productType === 'FINISHED_GOOD'
+                      ? 'border-[#8B4513] bg-[#FDF5E6] text-[#8B4513]'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                >
+                  🍰 Finished Good
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setQuickForm({ ...quickForm, productType: 'RAW_MATERIAL', price: '' })}
+                  className={`flex-1 py-2.5 px-3 rounded-lg border-2 text-sm font-semibold text-center transition-all ${quickForm.productType === 'RAW_MATERIAL'
+                      ? 'border-[#8B4513] bg-[#FDF5E6] text-[#8B4513]'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-300'
+                    }`}
+                >
+                  📦 Raw Material
+                </button>
+              </div>
+              {quickForm.productType === 'RAW_MATERIAL' && (
+                <p className="text-xs text-amber-600 mt-1">⚠️ Raw materials are for storage only, not for billing/selling.</p>
+              )}
+            </div>
+
+            <div>
               <label className="block text-sm font-medium text-gray-700">Category *</label>
               <select
                 name="categoryId"
