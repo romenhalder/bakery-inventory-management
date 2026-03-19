@@ -135,8 +135,8 @@ public class ReportService {
 
                 // Stock details
                 List<InventoryResponse> inventory = inventoryRepository.findAll().stream()
-                                .filter(inv -> inv.getProduct().getIsActive())
-                                .map(inv -> inventoryService.getInventoryByProduct(inv.getProduct().getId()))
+                                .filter(inv -> inv.getProduct() != null && inv.getProduct().getIsActive())
+                                .map(inventoryService::mapToInventoryResponse)
                                 .collect(Collectors.toList());
                 report.put("inventoryDetails", inventory);
 
