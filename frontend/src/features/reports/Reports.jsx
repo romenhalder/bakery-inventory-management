@@ -10,6 +10,9 @@ import {
   CubeIcon,
   ExclamationTriangleIcon,
   ArrowTrendingUpIcon,
+  CheckCircleIcon,
+  XCircleIcon,
+  ClockIcon,
 } from '@heroicons/react/24/outline';
 import {
   fetchAnalytics,
@@ -22,12 +25,12 @@ import {
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-// Color palette
-const COLORS = ['#8B4513', '#DAA520', '#D2691E', '#CD853F', '#DEB887', '#F4A460', '#FFDEAD', '#FFE4B5'];
+const PRIMARY = [139, 69, 19];
+const COLORS = ['#8B4513', '#D2691E', '#DAA520', '#228B22', '#4682B4', '#6A5ACD', '#C71585', '#FF4500', '#2E8B57', '#1E90FF'];
 
 const Reports = () => {
   const dispatch = useDispatch();
-  const { analytics, stockReport, salesReport, usageReport, loading } = useSelector((state) => state.reports);
+  const { analytics, stockReport, salesReport, usageReport, loading, error } = useSelector((state) => state.reports);
 
   const [dateRange, setDateRange] = useState({
     startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
@@ -36,15 +39,16 @@ const Reports = () => {
   const [activeTab, setActiveTab] = useState('analytics');
 
   useEffect(() => {
-    if (activeTab === 'analytics' && !analytics) {
+    if (activeTab === 'analytics' && !analytics && !loading) {
       dispatch(fetchAnalytics());
     }
-  }, [activeTab, analytics, dispatch]);
+  }, [activeTab, analytics, loading, dispatch]);
 
   const handleGenerateReport = () => {
     const start = new Date(dateRange.startDate);
+    start.setHours(0, 0, 0, 0);
     const end = new Date(dateRange.endDate);
-    end.setHours(23, 59, 59);
+    end.setHours(23, 59, 59, 999);
 
     switch (activeTab) {
       case 'stock':
@@ -63,8 +67,9 @@ const Reports = () => {
 
   const handleDownloadCSV = () => {
     const start = new Date(dateRange.startDate);
+    start.setHours(0, 0, 0, 0);
     const end = new Date(dateRange.endDate);
-    end.setHours(23, 59, 59);
+    end.setHours(23, 59, 59, 999);
     dispatch(downloadReportCSV({ type: activeTab, startDate: start.toISOString(), endDate: end.toISOString() }));
   };
 
@@ -73,94 +78,202 @@ const Reports = () => {
     return '₹' + num.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
-  // =========================
-  // PDF Generation Functions
-  // =========================
-
-  const addPdfHeader = (doc, title, dateInfo) => {
-    doc.setFillColor(139, 69, 19);
-    doc.rect(0, 0, doc.internal.pageSize.width, 40, 'F');
-    doc.setTextColor(255, 255, 255);
-    doc.setFontSize(20);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Bakery Inventory Management', 14, 18);
-    doc.setFontSize(12);
-    doc.setFont('helvetica', 'normal');
-    doc.text(title, 14, 32);
-    if (dateInfo) {
-      doc.setFontSize(9);
-      doc.text(dateInfo, doc.internal.pageSize.width - 14, 32, { align: 'right' });
-    }
-    doc.setTextColor(0, 0, 0);
-    return 48;
+  // Helper function to calculate percentage
+  const calculatePercentage = (value, total) => {
+    const v = Number(value || 0);
+    const t = Number(total || 1);
+    if (t === 0) return '0%';
+    return ((v / t) * 100).toFixed(1) + '%';
   };
 
-  const addPdfFooter = (doc) => {
+  // =========================
+  // Professional Footer
+  // =========================
+
+  const addProfessionalFooter = (doc, additionalInfo = '') => {
     const pageCount = doc.internal.getNumberOfPages();
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
+      
+      // Footer line
+      doc.setDrawColor(139, 69, 19);
+      doc.setLineWidth(0.5);
+      doc.line(14, pageHeight - 15, pageWidth - 14, pageHeight - 15);
+
+      // Footer content
       doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(
-        `Generated on ${new Date().toLocaleString()} | Page ${i} of ${pageCount}`,
-        doc.internal.pageSize.width / 2,
-        doc.internal.pageSize.height - 10,
-        { align: 'center' }
-      );
+      doc.setTextColor(100, 100, 100);
+      
+      // Left - Generation info
+      doc.text(`Generated: ${new Date().toLocaleString('en-IN', { 
+        day: '2-digit', 
+        month: 'short', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })}`, 14, pageHeight - 8);
+      
+      // Center - Confidential
+      doc.setFont('helvetica', 'italic');
+      doc.text('Bakery Inventra - Internal Use Only', pageWidth / 2, pageHeight - 8, { align: 'center' });
+      
+      // Right - Page number
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Page ${i} of ${pageCount}`, pageWidth - 14, pageHeight - 8, { align: 'right' });
     }
   };
+
+  // =========================
+  // Analytics PDF - Clean & Simple
+  // =========================
 
   const downloadAnalyticsPdf = () => {
     if (!analytics) return;
     const doc = new jsPDF();
-    let y = addPdfHeader(doc, 'Business Analytics Report', `Generated: ${new Date().toLocaleDateString()}`);
+    const pageWidth = doc.internal.pageSize.width;
+    let y = 20;
 
-    // Sales KPIs
-    doc.setFontSize(14);
+    // Clean Header
+    doc.setFillColor(139, 69, 19);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BAKERY INVENTRA', 14, 15);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Inventory Analytics Report', 14, 24);
+    
+    doc.setFontSize(9);
+    doc.text('Date: ' + new Date().toLocaleDateString('en-IN', { 
+      day: '2-digit', month: 'short', year: 'numeric' 
+    }), pageWidth - 14, 15, { align: 'right' });
+    
+    doc.setTextColor(0, 0, 0);
+    y = 50;
+
+    // =====================
+    // SALES SUMMARY SECTION
+    // =====================
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(139, 69, 19);
-    doc.text('Sales Overview', 14, y);
+    doc.text('Sales Summary', 14, y);
     y += 8;
 
+    // Sales Summary Table
     autoTable(doc, {
       startY: y,
       head: [['Period', 'Revenue', 'Orders']],
       body: [
-        ['Today', formatCurrency(analytics.todaySales), String(analytics.todayOrderCount)],
-        ['This Week', formatCurrency(analytics.weekSales), String(analytics.weekOrderCount)],
-        ['This Month', formatCurrency(analytics.monthSales), String(analytics.monthOrderCount)],
+        ['Today', formatCurrency(analytics.todaySales), String(analytics.todayOrderCount || 0)],
+        ['This Week', formatCurrency(analytics.weekSales), String(analytics.weekOrderCount || 0)],
+        ['This Month', formatCurrency(analytics.monthSales), String(analytics.monthOrderCount || 0)],
       ],
       theme: 'grid',
-      headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [139, 69, 19], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      bodyStyles: { fontSize: 10, halign: 'center' },
+      columnStyles: {
+        1: { halign: 'right' },
+      },
+      alternateRowStyles: { fillColor: [253, 245, 230] },
+      margin: { left: 14, right: 14 },
+      tableWidth: 'auto',
     });
-    y = doc.lastAutoTable.finalY + 12;
+    y = doc.lastAutoTable.finalY + 15;
 
-    // Stock Health
-    doc.setFontSize(14);
+    // =====================
+    // STOCK OVERVIEW SECTION
+    // =====================
+    doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(139, 69, 19);
-    doc.text('Stock Health', 14, y);
+    doc.text('Stock Overview', 14, y);
+    y += 8;
+
+    // Stock Overview Table
+    autoTable(doc, {
+      startY: y,
+      head: [['Status', 'Count', 'Percentage']],
+      body: [
+        ['In Stock', String(analytics.inStockCount || 0), calculatePercentage(analytics.inStockCount, analytics.totalProducts)],
+        ['Low Stock', String(analytics.lowStockCount || 0), calculatePercentage(analytics.lowStockCount, analytics.totalProducts)],
+        ['Out of Stock', String(analytics.outOfStockCount || 0), calculatePercentage(analytics.outOfStockCount, analytics.totalProducts)],
+        ['Total Products', String(analytics.totalProducts || 0), '100%'],
+      ],
+      theme: 'grid',
+      headStyles: { 
+        fillColor: [34, 139, 34], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      bodyStyles: { fontSize: 10, halign: 'center' },
+      columnStyles: {
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+      },
+      alternateRowStyles: { fillColor: [245, 255, 245] },
+      margin: { left: 14, right: 14 },
+      tableWidth: 'auto',
+    });
+    y = doc.lastAutoTable.finalY + 15;
+
+    // =====================
+    // INVENTORY MOVEMENT SECTION
+    // =====================
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 69, 19);
+    doc.text('Inventory Movement (Last 30 Days)', 14, y);
     y += 8;
 
     autoTable(doc, {
       startY: y,
-      head: [['Status', 'Count']],
+      head: [['Movement Type', 'Quantity']],
       body: [
-        ['In Stock', String(analytics.inStockCount)],
-        ['Low Stock', String(analytics.lowStockCount)],
-        ['Out of Stock', String(analytics.outOfStockCount)],
-        ['Total Products', String(analytics.totalProducts)],
+        ['Stock In', String(analytics.monthStockIn || 0)],
+        ['Stock Out', String(analytics.monthStockOut || 0)],
+        ['Wastage (30 Days)', String(analytics.monthWastage || 0)],
+        ['Wastage (7 Days)', String(analytics.weekWastage || 0)],
       ],
       theme: 'grid',
-      headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [70, 130, 180], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      bodyStyles: { fontSize: 10, halign: 'center' },
+      columnStyles: {
+        1: { halign: 'center' },
+      },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      margin: { left: 14, right: 14 },
+      tableWidth: 'auto',
     });
-    y = doc.lastAutoTable.finalY + 12;
+    y = doc.lastAutoTable.finalY + 15;
 
-    // Top Products
-    if (analytics.topProducts?.length > 0) {
-      doc.setFontSize(14);
+    // =====================
+    // TOP SELLING PRODUCTS
+    // =====================
+    if (analytics.topProducts && analytics.topProducts.length > 0) {
+      if (y > 230) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(139, 69, 19);
       doc.text('Top Selling Products (Last 30 Days)', 14, y);
@@ -168,155 +281,430 @@ const Reports = () => {
 
       autoTable(doc, {
         startY: y,
-        head: [['#', 'Product', 'Qty Sold', 'Revenue']],
+        head: [['#', 'Product Name', 'Quantity Sold', 'Revenue']],
         body: analytics.topProducts.map((p, i) => [
-          String(i + 1), p.name, String(p.quantity), formatCurrency(p.revenue),
+          String(i + 1),
+          p.name || 'Unknown',
+          String(p.quantity || 0),
+          formatCurrency(p.revenue),
         ]),
-        theme: 'grid',
-        headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-        styles: { fontSize: 10 },
+        theme: 'striped',
+        headStyles: { 
+          fillColor: [139, 69, 19], 
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        bodyStyles: { fontSize: 10 },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 15 },
+          2: { halign: 'center' },
+          3: { halign: 'right' },
+        },
+        alternateRowStyles: { fillColor: [253, 245, 230] },
+        margin: { left: 14, right: 14 },
       });
-      y = doc.lastAutoTable.finalY + 12;
+      y = doc.lastAutoTable.finalY + 15;
     }
 
-    // Category Breakdown
-    if (analytics.categoryBreakdown?.length > 0) {
-      if (y > 240) { doc.addPage(); y = 20; }
-      doc.setFontSize(14);
+    // =====================
+    // CATEGORY BREAKDOWN
+    // =====================
+    if (analytics.categoryBreakdown && analytics.categoryBreakdown.length > 0) {
+      if (y > 230) {
+        doc.addPage();
+        y = 20;
+      }
+      
+      doc.setFontSize(12);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(139, 69, 19);
-      doc.text('Category Breakdown (Last 30 Days)', 14, y);
+      doc.text('Sales by Category (Last 30 Days)', 14, y);
       y += 8;
 
       autoTable(doc, {
         startY: y,
-        head: [['Category', 'Qty Sold', 'Revenue']],
-        body: analytics.categoryBreakdown.map((c) => [
-          c.category, String(c.quantity), formatCurrency(c.revenue),
-        ]),
-        theme: 'grid',
-        headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-        styles: { fontSize: 10 },
+        head: [['Category', 'Items Sold', 'Revenue', '% Share']],
+        body: analytics.categoryBreakdown.map((c) => {
+          const totalRevenue = analytics.categoryBreakdown.reduce((sum, cat) => sum + Number(cat.revenue || 0), 0);
+          const share = totalRevenue > 0 ? ((Number(c.revenue || 0) / totalRevenue) * 100).toFixed(1) : '0';
+          return [
+            c.category || 'Unknown',
+            String(c.quantity || 0),
+            formatCurrency(c.revenue),
+            share + '%',
+          ];
+        }),
+        theme: 'striped',
+        headStyles: { 
+          fillColor: [218, 165, 32], 
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        bodyStyles: { fontSize: 10 },
+        columnStyles: {
+          1: { halign: 'center' },
+          2: { halign: 'right' },
+          3: { halign: 'center' },
+        },
+        alternateRowStyles: { fillColor: [255, 250, 240] },
+        margin: { left: 14, right: 14 },
       });
     }
 
-    addPdfFooter(doc);
-    doc.save('analytics-report.pdf');
+    // Footer
+    addProfessionalFooter(doc, 'Bakery Inventra - Analytics Report');
+    doc.save(`analytics-report-${new Date().toISOString().split('T')[0]}.pdf`);
   };
+
+  // =========================
+  // Stock Report PDF - Clean & Simple
+  // =========================
 
   const downloadStockPdf = () => {
     if (!stockReport) return;
-    const doc = new jsPDF('l'); // landscape
-    let y = addPdfHeader(doc, 'Stock Report', `${stockReport.startDate} to ${stockReport.endDate}`);
+    const doc = new jsPDF('l');
+    const pageWidth = doc.internal.pageSize.width;
+    let y = 20;
 
-    // Summary
+    // Clean Header
+    doc.setFillColor(139, 69, 19);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BAKERY INVENTRA', 14, 15);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Stock Report', 14, 24);
+    
+    doc.setFontSize(9);
+    doc.text(`Period: ${stockReport.startDate} to ${stockReport.endDate}`, pageWidth - 14, 15, { align: 'right' });
+    doc.text('Date: ' + new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }), pageWidth - 14, 22, { align: 'right' });
+    
+    doc.setTextColor(0, 0, 0);
+    y = 50;
+
+    // Summary Section
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 69, 19);
+    doc.text('Stock Summary', 14, y);
+    y += 8;
+
     autoTable(doc, {
       startY: y,
-      head: [['Total Products', 'Finished Goods', 'Raw Materials', 'Low Stock', 'Out of Stock', 'Total Stock Qty']],
+      head: [['Total Products', 'Finished Goods', 'Raw Materials', 'Total Stock Qty', 'Low Stock', 'Out of Stock']],
       body: [[
-        String(stockReport.totalProducts), String(stockReport.finishedGoods),
-        String(stockReport.rawMaterials), String(stockReport.lowStockCount),
-        String(stockReport.outOfStockCount), String(stockReport.totalStockQuantity),
+        String(stockReport.totalProducts || 0),
+        String(stockReport.finishedGoods || 0),
+        String(stockReport.rawMaterials || 0),
+        String(stockReport.totalStockQuantity || 0),
+        String(stockReport.lowStockCount || 0),
+        String(stockReport.outOfStockCount || 0),
       ]],
       theme: 'grid',
-      headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [139, 69, 19], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      bodyStyles: { fontSize: 11, halign: 'center' },
+      alternateRowStyles: { fillColor: [253, 245, 230] },
+      margin: { left: 14, right: 14 },
     });
-    y = doc.lastAutoTable.finalY + 10;
+    y = doc.lastAutoTable.finalY + 15;
 
-    // Details
-    if (stockReport.inventoryDetails?.length > 0) {
+    // Inventory Details
+    if (stockReport.inventoryDetails && stockReport.inventoryDetails.length > 0) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(139, 69, 19);
+      doc.text('Inventory Details', 14, y);
+      y += 8;
+
       autoTable(doc, {
         startY: y,
-        head: [['Product', 'Category', 'Type', 'Stock', 'Status']],
-        body: stockReport.inventoryDetails.map((item) => [
-          item.productName, item.categoryName, item.productType,
-          String(item.currentQuantity),
-          item.isOutOfStock ? 'Out of Stock' : item.isLowStock ? 'Low Stock' : 'In Stock',
-        ]),
+        head: [['#', 'Product Name', 'Category', 'Type', 'Current Stock', 'Min Stock', 'Status']],
+        body: stockReport.inventoryDetails.map((item, i) => {
+          const status = item.isOutOfStock ? 'Out of Stock' : item.isLowStock ? 'Low Stock' : 'In Stock';
+          return [
+            String(i + 1),
+            item.productName || 'Unknown',
+            item.categoryName || 'N/A',
+            item.productType === 'FINISHED_GOOD' ? 'Finished' : 'Raw',
+            String(item.currentQuantity || 0),
+            String(item.minStockLevel || 0),
+            status,
+          ];
+        }),
         theme: 'striped',
-        headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-        styles: { fontSize: 9, cellPadding: 3 },
+        headStyles: { 
+          fillColor: [139, 69, 19], 
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center',
+        },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: {
+          0: { halign: 'center', cellWidth: 12 },
+          4: { halign: 'center' },
+          5: { halign: 'center' },
+          6: { halign: 'center' },
+        },
         alternateRowStyles: { fillColor: [253, 245, 230] },
+        margin: { left: 10, right: 10 },
+        didParseCell: function(data) {
+          if (data.column.index === 6 && data.section === 'body') {
+            const status = data.cell.raw;
+            if (status === 'Out of Stock') {
+              data.cell.styles.textColor = [220, 38, 38];
+              data.cell.styles.fontStyle = 'bold';
+            } else if (status === 'Low Stock') {
+              data.cell.styles.textColor = [245, 158, 11];
+              data.cell.styles.fontStyle = 'bold';
+            } else {
+              data.cell.styles.textColor = [22, 163, 74];
+            }
+          }
+        },
       });
     }
 
-    addPdfFooter(doc);
+    addProfessionalFooter(doc, `Stock Report: ${stockReport.startDate} to ${stockReport.endDate}`);
     doc.save(`stock-report-${stockReport.startDate}-to-${stockReport.endDate}.pdf`);
   };
+
+  // =========================
+  // Sales Report PDF - Clean & Simple
+  // =========================
 
   const downloadSalesPdf = () => {
     if (!salesReport) return;
     const doc = new jsPDF('l');
-    let y = addPdfHeader(doc, 'Sales Report', `${salesReport.startDate} to ${salesReport.endDate}`);
+    const pageWidth = doc.internal.pageSize.width;
+    let y = 20;
+
+    // Clean Header
+    doc.setFillColor(139, 69, 19);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BAKERY INVENTRA', 14, 15);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Sales Report', 14, 24);
+    
+    doc.setFontSize(9);
+    doc.text(`Period: ${salesReport.startDate} to ${salesReport.endDate}`, pageWidth - 14, 15, { align: 'right' });
+    doc.text('Date: ' + new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }), pageWidth - 14, 22, { align: 'right' });
+    
+    doc.setTextColor(0, 0, 0);
+    y = 50;
+
+    // Summary Section
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 69, 19);
+    doc.text('Sales Summary', 14, y);
+    y += 8;
 
     autoTable(doc, {
       startY: y,
-      head: [['Total Stock In', 'Total Stock Out', 'Total Sales Amount', 'Total Transactions']],
+      head: [['Total Transactions', 'Stock In', 'Stock Out', 'Total Sales Amount']],
       body: [[
-        String(salesReport.totalStockIn), String(salesReport.totalStockOut),
-        formatCurrency(salesReport.totalSalesAmount), String(salesReport.totalTransactions),
+        String(salesReport.totalTransactions || 0),
+        String(salesReport.totalStockIn || 0),
+        String(salesReport.totalStockOut || 0),
+        formatCurrency(salesReport.totalSalesAmount),
       ]],
       theme: 'grid',
-      headStyles: { fillColor: [139, 69, 19], textColor: 255 },
+      headStyles: { 
+        fillColor: [34, 139, 34], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      bodyStyles: { fontSize: 11, halign: 'center' },
+      alternateRowStyles: { fillColor: [245, 255, 245] },
+      margin: { left: 14, right: 14 },
     });
-    y = doc.lastAutoTable.finalY + 10;
+    y = doc.lastAutoTable.finalY + 15;
 
-    if (salesReport.salesDetails?.length > 0) {
+    // Sales Details
+    if (salesReport.salesDetails && salesReport.salesDetails.length > 0) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(139, 69, 19);
+      doc.text('Sales Details', 14, y);
+      y += 8;
+
       autoTable(doc, {
         startY: y,
-        head: [['Date', 'Product', 'Qty', 'Unit Price', 'Total', 'User']],
+        head: [['Date', 'Product', 'Qty', 'Unit Price', 'Total Amount', 'User']],
         body: salesReport.salesDetails.map((s) => [
-          new Date(s.transactionDate).toLocaleDateString(), s.productName,
-          String(Math.abs(s.quantity)), s.unitPrice ? formatCurrency(s.unitPrice) : 'N/A',
-          s.totalAmount ? formatCurrency(s.totalAmount) : 'N/A', s.userName,
+          new Date(s.transactionDate).toLocaleDateString('en-IN', { 
+            day: '2-digit', month: 'short', year: 'numeric' 
+          }),
+          s.productName || 'Unknown',
+          String(Math.abs(s.quantity || 0)),
+          s.unitPrice ? formatCurrency(s.unitPrice) : '-',
+          s.totalAmount ? formatCurrency(s.totalAmount) : '-',
+          s.userName || '-',
         ]),
         theme: 'striped',
-        headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-        styles: { fontSize: 9 },
+        headStyles: { 
+          fillColor: [139, 69, 19], 
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+        },
+        bodyStyles: { fontSize: 9 },
+        columnStyles: {
+          2: { halign: 'center' },
+          3: { halign: 'right' },
+          4: { halign: 'right' },
+        },
         alternateRowStyles: { fillColor: [253, 245, 230] },
+        margin: { left: 10, right: 10 },
       });
+    } else {
+      doc.setFontSize(11);
+      doc.setTextColor(150, 150, 150);
+      doc.text('No sales transactions found for this period.', pageWidth / 2, y + 20, { align: 'center' });
     }
 
-    addPdfFooter(doc);
+    addProfessionalFooter(doc, `Sales Report: ${salesReport.startDate} to ${salesReport.endDate}`);
     doc.save(`sales-report-${salesReport.startDate}-to-${salesReport.endDate}.pdf`);
   };
+
+  // =========================
+  // Usage Report PDF - Clean & Simple
+  // =========================
 
   const downloadUsagePdf = () => {
     if (!usageReport) return;
     const doc = new jsPDF('l');
-    let y = addPdfHeader(doc, 'Usage Report', `${usageReport.startDate} to ${usageReport.endDate}`);
+    const pageWidth = doc.internal.pageSize.width;
+    let y = 20;
+
+    // Clean Header
+    doc.setFillColor(139, 69, 19);
+    doc.rect(0, 0, pageWidth, 35, 'F');
+    
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(18);
+    doc.setFont('helvetica', 'bold');
+    doc.text('BAKERY INVENTRA', 14, 15);
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Usage Report', 14, 24);
+    
+    doc.setFontSize(9);
+    doc.text(`Period: ${usageReport.startDate} to ${usageReport.endDate}`, pageWidth - 14, 15, { align: 'right' });
+    doc.text('Date: ' + new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }), pageWidth - 14, 22, { align: 'right' });
+    
+    doc.setTextColor(0, 0, 0);
+    y = 50;
+
+    // Summary Section
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(139, 69, 19);
+    doc.text('Transaction Summary', 14, y);
+    y += 8;
 
     autoTable(doc, {
       startY: y,
-      head: [['Total', 'Stock In', 'Stock Out', 'Adjustments', 'Wastage', 'Returns']],
+      head: [['Total Transactions', 'Stock In', 'Stock Out', 'Adjustments', 'Wastage', 'Returns']],
       body: [[
-        String(usageReport.totalTransactions), String(usageReport.stockInCount),
-        String(usageReport.stockOutCount), String(usageReport.adjustmentCount),
-        String(usageReport.wastageCount), String(usageReport.returnCount),
+        String(usageReport.totalTransactions || 0),
+        String(usageReport.stockInCount || 0),
+        String(usageReport.stockOutCount || 0),
+        String(usageReport.adjustmentCount || 0),
+        String(usageReport.wastageCount || 0),
+        String(usageReport.returnCount || 0),
       ]],
       theme: 'grid',
-      headStyles: { fillColor: [139, 69, 19], textColor: 255 },
+      headStyles: { 
+        fillColor: [70, 130, 180], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'center',
+      },
+      bodyStyles: { fontSize: 11, halign: 'center' },
+      alternateRowStyles: { fillColor: [240, 248, 255] },
+      margin: { left: 14, right: 14 },
     });
-    y = doc.lastAutoTable.finalY + 10;
+    y = doc.lastAutoTable.finalY + 15;
 
-    if (usageReport.transactionDetails?.length > 0) {
+    // Transaction Details
+    if (usageReport.transactionDetails && usageReport.transactionDetails.length > 0) {
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(139, 69, 19);
+      doc.text('Transaction Details', 14, y);
+      y += 8;
+
       autoTable(doc, {
         startY: y,
-        head: [['Date', 'Product', 'Type', 'Qty', 'Previous', 'New', 'User']],
+        head: [['Date', 'Product', 'Type', 'Qty', 'Previous Qty', 'New Qty', 'User', 'Reason']],
         body: usageReport.transactionDetails.map((t) => [
-          new Date(t.transactionDate).toLocaleDateString(), t.productName,
-          t.transactionType.replace(/_/g, ' '), String(t.quantity),
-          String(t.previousQuantity), String(t.newQuantity), t.userName,
+          new Date(t.transactionDate).toLocaleDateString('en-IN', { 
+            day: '2-digit', month: 'short', year: 'numeric' 
+          }),
+          t.productName || 'Unknown',
+          t.transactionType ? t.transactionType.replace(/_/g, ' ') : '-',
+          String(t.quantity || 0),
+          String(t.previousQuantity || 0),
+          String(t.newQuantity || 0),
+          t.userName || '-',
+          t.reason || '-',
         ]),
         theme: 'striped',
-        headStyles: { fillColor: [139, 69, 19], textColor: 255 },
-        styles: { fontSize: 9 },
+        headStyles: { 
+          fillColor: [139, 69, 19], 
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+        },
+        bodyStyles: { fontSize: 8 },
+        columnStyles: {
+          2: { halign: 'center' },
+          3: { halign: 'center' },
+          4: { halign: 'center' },
+          5: { halign: 'center' },
+        },
         alternateRowStyles: { fillColor: [253, 245, 230] },
+        margin: { left: 10, right: 10 },
+        didParseCell: function(data) {
+          if (data.column.index === 2 && data.section === 'body') {
+            const type = data.cell.raw;
+            if (type === 'STOCK IN') {
+              data.cell.styles.textColor = [22, 163, 74];
+            } else if (type === 'STOCK OUT') {
+              data.cell.styles.textColor = [37, 99, 235];
+            } else if (type === 'WASTAGE') {
+              data.cell.styles.textColor = [220, 38, 38];
+            } else if (type === 'RETURN') {
+              data.cell.styles.textColor = [139, 92, 246];
+            }
+          }
+        },
       });
+    } else {
+      doc.setFontSize(11);
+      doc.setTextColor(150, 150, 150);
+      doc.text('No transactions found for this period.', pageWidth / 2, y + 20, { align: 'center' });
     }
 
-    addPdfFooter(doc);
+    addProfessionalFooter(doc, `Usage Report: ${usageReport.startDate} to ${usageReport.endDate}`);
     doc.save(`usage-report-${usageReport.startDate}-to-${usageReport.endDate}.pdf`);
   };
 
@@ -347,25 +735,33 @@ const Reports = () => {
     { id: 'usage', label: 'Usage Report', icon: ArrowPathIcon },
   ];
 
+  const getReportStatus = (tab) => {
+    switch (tab) {
+      case 'stock': return stockReport ? 'ready' : 'empty';
+      case 'sales': return salesReport ? 'ready' : 'empty';
+      case 'usage': return usageReport ? 'ready' : 'empty';
+      default: return 'ready';
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#8B4513]">Reports & Analytics</h1>
           <p className="text-sm text-gray-500 mt-1">Business insights and downloadable reports</p>
         </div>
-        <button
-          onClick={handleDownloadPDF}
-          disabled={loading || (activeTab === 'analytics' && !analytics) ||
-            (activeTab === 'stock' && !stockReport) ||
-            (activeTab === 'sales' && !salesReport) ||
-            (activeTab === 'usage' && !usageReport)}
-          className="flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <DocumentArrowDownIcon className="h-5 w-5" />
-          <span>Download PDF</span>
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={handleDownloadPDF}
+            disabled={loading || (activeTab !== 'analytics' && getReportStatus(activeTab) === 'empty')}
+            className="flex items-center space-x-2 px-5 py-2.5 bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white rounded-lg hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+          >
+            <DocumentArrowDownIcon className="h-5 w-5" />
+            <span>Download PDF</span>
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -373,6 +769,7 @@ const Reports = () => {
         <div className="flex space-x-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
+            const status = getReportStatus(tab.id);
             return (
               <button
                 key={tab.id}
@@ -380,13 +777,20 @@ const Reports = () => {
                   setActiveTab(tab.id);
                   if (tab.id !== 'analytics') dispatch(clearReports());
                 }}
-                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${activeTab === tab.id
+                className={`flex-1 flex items-center justify-center space-x-2 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all ${
+                  activeTab === tab.id
                     ? 'bg-gradient-to-r from-[#8B4513] to-[#D2691E] text-white shadow-md'
                     : 'text-gray-500 hover:text-[#8B4513] hover:bg-[#FDF5E6]'
-                  }`}
+                }`}
               >
                 <Icon className="h-4 w-4" />
                 <span>{tab.label}</span>
+                {tab.id !== 'analytics' && status === 'ready' && (
+                  <CheckCircleIcon className="h-4 w-4 text-green-500" />
+                )}
+                {tab.id !== 'analytics' && status === 'empty' && (
+                  <ClockIcon className="h-4 w-4 text-gray-400" />
+                )}
               </button>
             );
           })}
@@ -425,7 +829,7 @@ const Reports = () => {
                 )}
               </button>
               <button onClick={handleDownloadCSV}
-                disabled={loading || (!stockReport && !salesReport && !usageReport)}
+                disabled={loading || getReportStatus(activeTab) === 'empty'}
                 className="flex items-center space-x-2 px-4 py-2.5 border-2 border-[#8B4513] text-[#8B4513] rounded-lg hover:bg-[#FDF5E6] transition-colors disabled:opacity-50">
                 <DocumentArrowDownIcon className="h-5 w-5" /><span>CSV</span>
               </button>
@@ -442,6 +846,16 @@ const Reports = () => {
           {loading && !analytics && (
             <div className="flex justify-center py-16">
               <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#8B4513] border-t-transparent"></div>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-500 p-4 rounded-lg flex items-center gap-3">
+              <ExclamationTriangleIcon className="h-6 w-6 text-red-500" />
+              <div>
+                <p className="text-sm font-medium text-red-800">Error Loading Analytics</p>
+                <p className="text-xs text-red-600">{error}</p>
+              </div>
             </div>
           )}
 
@@ -628,44 +1042,61 @@ const Reports = () => {
       {/* =================== */}
       {activeTab === 'stock' && stockReport && (
         <div className="space-y-5">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: 'Total Products', value: stockReport.totalProducts, bg: 'bg-blue-50', text: 'text-blue-700' },
-              { label: 'Finished Goods', value: stockReport.finishedGoods, bg: 'bg-green-50', text: 'text-green-700' },
-              { label: 'Raw Materials', value: stockReport.rawMaterials, bg: 'bg-purple-50', text: 'text-purple-700' },
-              { label: 'Low Stock', value: stockReport.lowStockCount, bg: 'bg-amber-50', text: 'text-amber-700' },
-            ].map((s) => (
-              <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
-                <p className="text-xs font-medium text-gray-500">{s.label}</p>
-                <p className={`text-3xl font-bold ${s.text} mt-1`}>{s.value}</p>
-              </div>
-            ))}
+              { label: 'Total Products', value: stockReport.totalProducts, bg: 'bg-blue-50', text: 'text-blue-700', icon: CubeIcon },
+              { label: 'Finished Goods', value: stockReport.finishedGoods, bg: 'bg-green-50', text: 'text-green-700', icon: ShoppingBagIcon },
+              { label: 'Raw Materials', value: stockReport.rawMaterials, bg: 'bg-purple-50', text: 'text-purple-700', icon: CubeIcon },
+              { label: 'Low Stock', value: stockReport.lowStockCount, bg: 'bg-amber-50', text: 'text-amber-700', icon: ExclamationTriangleIcon },
+              { label: 'Out of Stock', value: stockReport.outOfStockCount, bg: 'bg-red-50', text: 'text-red-700', icon: XCircleIcon },
+            ].map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className={`h-5 w-5 ${s.text}`} />
+                    <p className="text-xs font-medium text-gray-500">{s.label}</p>
+                  </div>
+                  <p className={`text-3xl font-bold ${s.text}`}>{s.value}</p>
+                </div>
+              );
+            })}
           </div>
+          
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">Stock Details</h3>
+              <span className="text-sm text-gray-500">{stockReport.inventoryDetails?.length || 0} items</span>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {['Product', 'Category', 'Type', 'Stock', 'Status'].map((h) => (
-                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                    {['Product', 'Category', 'Type', 'Stock', 'Min Stock', 'Status'].map((h) => (
+                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {stockReport.inventoryDetails?.map((item) => (
-                    <tr key={item.id} className="hover:bg-[#FDF5E6]/50">
+                    <tr key={item.id || item.productId} className="hover:bg-[#FDF5E6]/50 transition-colors">
                       <td className="px-5 py-3 text-sm font-medium text-gray-800">{item.productName}</td>
                       <td className="px-5 py-3 text-sm text-gray-600">{item.categoryName}</td>
-                      <td className="px-5 py-3 text-sm text-gray-600">{item.productType}</td>
+                      <td className="px-5 py-3 text-sm text-gray-600">
+                        <span className={`px-2 py-1 text-xs rounded-full ${
+                          item.productType === 'FINISHED_GOOD' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                        }`}>
+                          {item.productType === 'FINISHED_GOOD' ? 'Finished' : 'Raw'}
+                        </span>
+                      </td>
                       <td className="px-5 py-3 text-sm font-semibold">{item.currentQuantity}</td>
+                      <td className="px-5 py-3 text-sm text-gray-500">{item.minStockLevel || 0}</td>
                       <td className="px-5 py-3">
-                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${item.isOutOfStock ? 'bg-red-100 text-red-700' :
-                            item.isLowStock ? 'bg-amber-100 text-amber-700' :
-                              'bg-green-100 text-green-700'
-                          }`}>
+                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                          item.isOutOfStock ? 'bg-red-100 text-red-700' :
+                          item.isLowStock ? 'bg-amber-100 text-amber-700' :
+                          'bg-green-100 text-green-700'
+                        }`}>
                           {item.isOutOfStock ? 'Out of Stock' : item.isLowStock ? 'Low Stock' : 'In Stock'}
                         </span>
                       </td>
@@ -685,39 +1116,61 @@ const Reports = () => {
         <div className="space-y-5">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Stock In', value: salesReport.totalStockIn, bg: 'bg-blue-50', text: 'text-blue-700' },
-              { label: 'Stock Out', value: salesReport.totalStockOut, bg: 'bg-green-50', text: 'text-green-700' },
-              { label: 'Sales Amount', value: formatCurrency(salesReport.totalSalesAmount), bg: 'bg-purple-50', text: 'text-purple-700' },
-              { label: 'Transactions', value: salesReport.totalTransactions, bg: 'bg-amber-50', text: 'text-amber-700' },
-            ].map((s) => (
-              <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
-                <p className="text-xs font-medium text-gray-500">{s.label}</p>
-                <p className={`text-2xl font-bold ${s.text} mt-1`}>{s.value}</p>
-              </div>
-            ))}
+              { label: 'Stock In', value: salesReport.totalStockIn, bg: 'bg-blue-50', text: 'text-blue-700', icon: ArrowPathIcon },
+              { label: 'Stock Out', value: salesReport.totalStockOut, bg: 'bg-green-50', text: 'text-green-700', icon: ShoppingBagIcon },
+              { label: 'Sales Amount', value: formatCurrency(salesReport.totalSalesAmount), bg: 'bg-purple-50', text: 'text-purple-700', icon: CurrencyRupeeIcon },
+              { label: 'Transactions', value: salesReport.totalTransactions, bg: 'bg-amber-50', text: 'text-amber-700', icon: ChartBarIcon },
+            ].map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className={`h-5 w-5 ${s.text}`} />
+                    <p className="text-xs font-medium text-gray-500">{s.label}</p>
+                  </div>
+                  <p className={`text-2xl font-bold ${s.text} mt-1`}>{s.value}</p>
+                </div>
+              );
+            })}
           </div>
+          
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">Sales Details</h3>
+              <span className="text-sm text-gray-500">{salesReport.salesDetails?.length || 0} transactions</span>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {['Date', 'Product', 'Qty', 'Unit Price', 'Total', 'User'].map((h) => (
-                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                    {['Date', 'Product', 'Qty', 'Unit Price', 'Total', 'User', 'Status'].map((h) => (
+                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {salesReport.salesDetails?.map((sale) => (
-                    <tr key={sale.id} className="hover:bg-[#FDF5E6]/50">
-                      <td className="px-5 py-3 text-sm text-gray-600">{new Date(sale.transactionDate).toLocaleDateString()}</td>
+                    <tr key={sale.id} className="hover:bg-[#FDF5E6]/50 transition-colors">
+                      <td className="px-5 py-3 text-sm text-gray-600">
+                        {new Date(sale.transactionDate).toLocaleString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </td>
                       <td className="px-5 py-3 text-sm font-medium text-gray-800">{sale.productName}</td>
-                      <td className="px-5 py-3 text-sm">{Math.abs(sale.quantity)}</td>
-                      <td className="px-5 py-3 text-sm">{sale.unitPrice ? formatCurrency(sale.unitPrice) : 'N/A'}</td>
-                      <td className="px-5 py-3 text-sm font-semibold text-[#8B4513]">{sale.totalAmount ? formatCurrency(sale.totalAmount) : 'N/A'}</td>
-                      <td className="px-5 py-3 text-sm text-gray-600">{sale.userName}</td>
+                      <td className="px-5 py-3 text-sm font-semibold">{Math.abs(sale.quantity)}</td>
+                      <td className="px-5 py-3 text-sm">{sale.unitPrice ? formatCurrency(sale.unitPrice) : '-'}</td>
+                      <td className="px-5 py-3 text-sm font-semibold text-[#8B4513]">{sale.totalAmount ? formatCurrency(sale.totalAmount) : '-'}</td>
+                      <td className="px-5 py-3 text-sm text-gray-600">{sale.userName || '-'}</td>
+                      <td className="px-5 py-3">
+                        <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-green-100 text-green-700 flex items-center gap-1 w-fit">
+                          <CheckCircleIcon className="h-3 w-3" />
+                          Completed
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -734,49 +1187,67 @@ const Reports = () => {
         <div className="space-y-5">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
             {[
-              { label: 'Total', value: usageReport.totalTransactions, bg: 'bg-blue-50', text: 'text-blue-700' },
-              { label: 'Stock In', value: usageReport.stockInCount, bg: 'bg-green-50', text: 'text-green-700' },
-              { label: 'Stock Out', value: usageReport.stockOutCount, bg: 'bg-red-50', text: 'text-red-700' },
-              { label: 'Adjustments', value: usageReport.adjustmentCount, bg: 'bg-amber-50', text: 'text-amber-700' },
-              { label: 'Wastage', value: usageReport.wastageCount, bg: 'bg-orange-50', text: 'text-orange-700' },
-            ].map((s) => (
-              <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
-                <p className="text-xs font-medium text-gray-500">{s.label}</p>
-                <p className={`text-2xl font-bold ${s.text} mt-1`}>{s.value}</p>
-              </div>
-            ))}
+              { label: 'Total', value: usageReport.totalTransactions, bg: 'bg-blue-50', text: 'text-blue-700', icon: ChartBarIcon },
+              { label: 'Stock In', value: usageReport.stockInCount, bg: 'bg-green-50', text: 'text-green-700', icon: ArrowPathIcon },
+              { label: 'Stock Out', value: usageReport.stockOutCount, bg: 'bg-blue-50', text: 'text-blue-700', icon: ShoppingBagIcon },
+              { label: 'Adjustments', value: usageReport.adjustmentCount, bg: 'bg-purple-50', text: 'text-purple-700', icon: ArrowPathIcon },
+              { label: 'Wastage', value: usageReport.wastageCount, bg: 'bg-red-50', text: 'text-red-700', icon: ExclamationTriangleIcon },
+            ].map((s, i) => {
+              const Icon = s.icon;
+              return (
+                <div key={s.label} className={`${s.bg} rounded-xl p-4`}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className={`h-5 w-5 ${s.text}`} />
+                    <p className="text-xs font-medium text-gray-500">{s.label}</p>
+                  </div>
+                  <p className={`text-2xl font-bold ${s.text}`}>{s.value}</p>
+                </div>
+              );
+            })}
           </div>
+          
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100">
+            <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
               <h3 className="text-lg font-semibold text-gray-800">Transaction Details</h3>
+              <span className="text-sm text-gray-500">{usageReport.transactionDetails?.length || 0} transactions</span>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    {['Date', 'Product', 'Type', 'Qty', 'Previous', 'New', 'User'].map((h) => (
-                      <th key={h} className="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">{h}</th>
+                    {['Date', 'Product', 'Type', 'Qty', 'Previous', 'New', 'User', 'Reason'].map((h) => (
+                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {usageReport.transactionDetails?.map((trans) => (
-                    <tr key={trans.id} className="hover:bg-[#FDF5E6]/50">
-                      <td className="px-5 py-3 text-sm text-gray-600">{new Date(trans.transactionDate).toLocaleDateString()}</td>
-                      <td className="px-5 py-3 text-sm font-medium text-gray-800">{trans.productName}</td>
-                      <td className="px-5 py-3">
-                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${trans.transactionType === 'STOCK_IN' ? 'bg-green-100 text-green-700' :
-                            trans.transactionType === 'STOCK_OUT' ? 'bg-red-100 text-red-700' :
-                              trans.transactionType === 'ADJUSTMENT' ? 'bg-blue-100 text-blue-700' :
-                                'bg-amber-100 text-amber-700'
-                          }`}>
+                    <tr key={trans.id} className="hover:bg-[#FDF5E6]/50 transition-colors">
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        {new Date(trans.transactionDate).toLocaleDateString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        })}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-800">{trans.productName}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${
+                          trans.transactionType === 'STOCK_IN' ? 'bg-green-100 text-green-700' :
+                          trans.transactionType === 'STOCK_OUT' ? 'bg-blue-100 text-blue-700' :
+                          trans.transactionType === 'ADJUSTMENT' ? 'bg-purple-100 text-purple-700' :
+                          trans.transactionType === 'WASTAGE' ? 'bg-red-100 text-red-700' :
+                          trans.transactionType === 'RETURN' ? 'bg-amber-100 text-amber-700' :
+                          'bg-gray-100 text-gray-700'
+                        }`}>
                           {trans.transactionType.replace(/_/g, ' ')}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-sm">{trans.quantity}</td>
-                      <td className="px-5 py-3 text-sm text-gray-500">{trans.previousQuantity}</td>
-                      <td className="px-5 py-3 text-sm font-medium">{trans.newQuantity}</td>
-                      <td className="px-5 py-3 text-sm text-gray-600">{trans.userName}</td>
+                      <td className="px-4 py-3 text-sm font-semibold">{trans.quantity}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{trans.previousQuantity || 0}</td>
+                      <td className="px-4 py-3 text-sm font-medium">{trans.newQuantity || 0}</td>
+                      <td className="px-4 py-3 text-sm text-gray-600">{trans.userName || '-'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500 truncate max-w-[150px]">{trans.reason || '-'}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -789,16 +1260,21 @@ const Reports = () => {
       {/* Empty state for report tabs */}
       {activeTab !== 'analytics' && !stockReport && !salesReport && !usageReport && !loading && (
         <div className="text-center py-16 bg-white rounded-xl shadow-sm border border-gray-100">
-          <ChartBarIcon className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-500">Select a date range and generate</h3>
-          <p className="text-sm text-gray-400 mt-1">Choose your date range above and click Generate</p>
+          <div className="w-20 h-20 bg-[#FDF5E6] rounded-full flex items-center justify-center mx-auto mb-4">
+            <ChartBarIcon className="h-10 w-10 text-[#8B4513]" />
+          </div>
+          <h3 className="text-xl font-semibold text-gray-500">Generate Your Report</h3>
+          <p className="text-sm text-gray-400 mt-2">Select a date range above and click Generate to view your {activeTab} report</p>
         </div>
       )}
 
       {/* Loading for report tabs */}
       {activeTab !== 'analytics' && loading && (
         <div className="flex justify-center py-16">
-          <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#8B4513] border-t-transparent"></div>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-4 border-[#8B4513] border-t-transparent mx-auto mb-4"></div>
+            <p className="text-gray-500">Generating report...</p>
+          </div>
         </div>
       )}
     </div>

@@ -18,6 +18,17 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+const formatDateForBackend = (dateString) => {
+  const date = new Date(dateString);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  const hours = String(date.getHours()).padStart(2, '0');
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const seconds = String(date.getSeconds()).padStart(2, '0');
+  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
 // Async thunks
 export const fetchAnalytics = createAsyncThunk(
   'reports/fetchAnalytics',
@@ -35,7 +46,9 @@ export const fetchStockReport = createAsyncThunk(
   'reports/fetchStock',
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/reports/stock?startDate=${startDate}&endDate=${endDate}`);
+      const formattedStart = formatDateForBackend(startDate);
+      const formattedEnd = formatDateForBackend(endDate);
+      const response = await api.get(`/reports/stock?startDate=${formattedStart}&endDate=${formattedEnd}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch stock report');
@@ -47,7 +60,9 @@ export const fetchSalesReport = createAsyncThunk(
   'reports/fetchSales',
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/reports/sales?startDate=${startDate}&endDate=${endDate}`);
+      const formattedStart = formatDateForBackend(startDate);
+      const formattedEnd = formatDateForBackend(endDate);
+      const response = await api.get(`/reports/sales?startDate=${formattedStart}&endDate=${formattedEnd}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch sales report');
@@ -59,7 +74,9 @@ export const fetchUsageReport = createAsyncThunk(
   'reports/fetchUsage',
   async ({ startDate, endDate }, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/reports/usage?startDate=${startDate}&endDate=${endDate}`);
+      const formattedStart = formatDateForBackend(startDate);
+      const formattedEnd = formatDateForBackend(endDate);
+      const response = await api.get(`/reports/usage?startDate=${formattedStart}&endDate=${formattedEnd}`);
       return response.data;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch usage report');
