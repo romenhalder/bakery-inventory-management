@@ -143,8 +143,12 @@ const CatalogManagement = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filtered.map(item => (
                         <div key={item.id} className="bg-white rounded-2xl border shadow-sm hover:shadow-md transition-all overflow-hidden group">
-                            <div className="h-36 bg-gradient-to-br from-[#FDF5E6] to-[#FAEBD7] flex items-center justify-center relative">
-                                {getImageSrc(item) ? <img src={getImageSrc(item)} alt={item.name} className="h-full w-full object-cover" /> : <span className="text-5xl">{CAT_ICONS[item.category] || '🎂'}</span>}
+                            <div className="h-36 bg-gradient-to-br from-[#FDF5E6] to-[#FAEBD7] relative overflow-hidden">
+                                {getImageSrc(item) ? (
+                                    <img src={getImageSrc(item)} alt={item.name} className="w-full h-full object-cover object-center" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center"><span className="text-5xl">{CAT_ICONS[item.category] || '🎂'}</span></div>
+                                )}
                                 <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                     <button onClick={() => handleEdit(item)} className="p-1.5 bg-white/90 rounded-lg shadow-sm hover:bg-white"><PencilIcon className="h-4 w-4 text-[#8B4513]" /></button>
                                     <button onClick={() => handleDelete(item.id)} className="p-1.5 bg-white/90 rounded-lg shadow-sm hover:bg-white"><TrashIcon className="h-4 w-4 text-red-500" /></button>
