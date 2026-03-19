@@ -259,7 +259,7 @@ public class InventoryService {
                 .collect(Collectors.toList());
     }
 
-    private InventoryResponse mapToInventoryResponse(Inventory inventory) {
+    public InventoryResponse mapToInventoryResponse(Inventory inventory) {
         Product product = inventory.getProduct();
         return InventoryResponse.builder()
                 .id(inventory.getId())
