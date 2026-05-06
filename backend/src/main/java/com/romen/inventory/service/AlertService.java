@@ -34,6 +34,7 @@ public class AlertService {
      * Check a product's stock level and create alerts if needed.
      * Called after sales, stock updates, or product creation.
      */
+
     @Transactional
     public void checkAndCreateStockAlerts(Product product, int currentStock) {
         if (product == null)
