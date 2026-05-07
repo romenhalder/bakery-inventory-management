@@ -9,7 +9,7 @@ import {
     createBooking, updateBooking, clearBookingSuccess, clearBookingError,
 } from './bookingSlice';
 
-const API_URL = 'http://localhost:8080';
+import { API_URL } from '../../config/api';
 
 const EVENT_ICONS = { BIRTHDAY: '🎂', WEDDING: '💒', RECEPTION: '🎉', ANNIVERSARY: '💝', CORPORATE: '🏢', FESTIVAL: '🪔', OTHER: '📋' };
 const STATUS_STYLES = {

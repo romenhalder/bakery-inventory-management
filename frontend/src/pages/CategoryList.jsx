@@ -6,6 +6,7 @@ import {
   TrashIcon,
   XMarkIcon,
 } from '@heroicons/react/24/outline';
+import { API_URL } from '../config/api';
 
 const CategoryList = () => {
   const dispatch = useDispatch();
@@ -20,7 +21,6 @@ const CategoryList = () => {
     isActive: true,
   });
 
-  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     fetchCategories();

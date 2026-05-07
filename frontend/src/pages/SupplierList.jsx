@@ -12,6 +12,7 @@ import {
   BuildingOfficeIcon,
   MagnifyingGlassIcon,
 } from '@heroicons/react/24/outline';
+import { API_URL } from '../config/api';
 
 const SupplierList = () => {
   const { token } = useSelector((state) => state.auth);
@@ -34,7 +35,6 @@ const SupplierList = () => {
   const [formErrors, setFormErrors] = useState({});
   const [submitSuccess, setSubmitSuccess] = useState('');
 
-  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     fetchSuppliers();

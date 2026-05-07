@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../../config/api';
 
 const ForgotPassword = () => {
   const navigate = useNavigate();
@@ -9,7 +10,6 @@ const ForgotPassword = () => {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const API_URL = 'http://localhost:8080';
 
   const handleSubmit = async (e) => {
     e.preventDefault();

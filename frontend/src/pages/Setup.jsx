@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_URL } from '../config/api';
 
 const Setup = () => {
   const navigate = useNavigate();
@@ -17,7 +18,6 @@ const Setup = () => {
   const [submitError, setSubmitError] = useState('');
   const [success, setSuccess] = useState(false);
 
-  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     checkSetup();

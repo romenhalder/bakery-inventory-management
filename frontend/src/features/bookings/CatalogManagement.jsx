@@ -2,10 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { PlusIcon, PencilIcon, TrashIcon, XCircleIcon, PhotoIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import { fetchCatalog, createCatalogItem, updateCatalogItem, deleteCatalogItem, uploadCatalogImage, clearBookingSuccess } from './bookingSlice';
+import { API_URL } from '../../config/api';
 
 const CATEGORIES = ['BIRTHDAY', 'WEDDING', 'ANNIVERSARY', 'PHOTO', 'DESIGNER', 'THEME', 'FESTIVAL', 'EGGLESS', 'CUSTOM'];
 const CAT_ICONS = { BIRTHDAY: '🎂', WEDDING: '💒', ANNIVERSARY: '💝', PHOTO: '📸', DESIGNER: '🎨', THEME: '🎭', FESTIVAL: '🪔', EGGLESS: '🥚', CUSTOM: '✨' };
-const API_URL = 'http://localhost:8080';
 
 const formatCurrency = (a) => '₹' + Number(a || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 

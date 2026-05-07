@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import axios from 'axios';
 import { KeyIcon, EnvelopeIcon, UserIcon, ClockIcon, CheckCircleIcon, EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
+import { API_URL } from '../config/api';
 
 const PasswordResetRequests = () => {
   const { token } = useSelector((state) => state.auth);
@@ -14,7 +15,6 @@ const PasswordResetRequests = () => {
   const [showPassword, setShowPassword] = useState({});
   const [validationErrors, setValidationErrors] = useState({});
 
-  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     fetchRequests();

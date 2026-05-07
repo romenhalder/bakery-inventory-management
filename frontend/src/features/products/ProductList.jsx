@@ -9,6 +9,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { fetchProducts, deleteProduct, searchProducts, clearSuccess, fetchCategories } from './productSlice';
+import { API_URL } from '../../config/api';
 
 const BRANDS = ['KitKat', 'Dairy Milk', 'Amul', 'Parle', 'Britannia', 'Generic'];
 const FLAVORS = ['Chocolate', 'Vanilla', 'Strawberry', 'Butterscotch', 'Black Forest', 'Red Velvet', 'Mango'];
@@ -289,7 +290,7 @@ const ProductList = () => {
                         <div className="flex items-center">
                           {product.imageUrl && (
                             <img
-                              src={`http://localhost:8080/uploads/${product.imageUrl}`}
+                              src={`${API_URL}/uploads/${product.imageUrl}`}
                               alt={product.name}
                               className="h-10 w-10 rounded-full object-cover mr-3"
                             />

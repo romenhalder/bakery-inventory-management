@@ -18,6 +18,7 @@ import axios from 'axios';
 import { fetchProducts } from '../features/products/productSlice';
 import { fetchInventory, fetchLowStock } from '../features/inventory/inventorySlice';
 import { fetchUnreadAlerts } from '../features/alerts/alertSlice';
+import { API_URL } from '../config/api';
 
 const AdminDashboard = () => {
   const dispatch = useDispatch();
@@ -34,7 +35,6 @@ const AdminDashboard = () => {
 
   const isAdmin = user?.role === 'ADMIN';
 
-  const API_URL = 'http://localhost:8080';
 
   useEffect(() => {
     dispatch(fetchProducts());

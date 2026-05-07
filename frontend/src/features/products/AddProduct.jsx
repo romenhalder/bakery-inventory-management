@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router-dom';
 import { createProduct, updateProduct, fetchProductById, clearSuccess, clearError, fetchCategories } from './productSlice';
+import { API_URL } from '../../config/api';
 
 const UNIT_OPTIONS = [
   { value: 'PIECE', label: 'Piece' },
@@ -118,7 +119,7 @@ const AddProduct = () => {
   const fetchSuppliersList = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/suppliers', {
+      const response = await fetch(`${API_URL}/suppliers`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {

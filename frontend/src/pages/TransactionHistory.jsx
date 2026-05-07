@@ -5,6 +5,7 @@ import {
     FunnelIcon,
     ArrowPathIcon,
 } from '@heroicons/react/24/outline';
+import { API_URL } from '../config/api';
 
 const TransactionHistory = () => {
     const { token } = useSelector((state) => state.auth);
@@ -15,8 +16,7 @@ const TransactionHistory = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [sortOrder, setSortOrder] = useState('newest');
 
-    const API_URL = 'http://localhost:8080';
-
+  
     useEffect(() => {
         fetchTransactions();
     }, []);

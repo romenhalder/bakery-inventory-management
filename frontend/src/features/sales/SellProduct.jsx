@@ -13,6 +13,7 @@ import {
 } from '../sales/salesSlice';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { API_URL } from '../../config/api';
 
 const SellProduct = () => {
   const dispatch = useDispatch();
@@ -60,7 +61,7 @@ const SellProduct = () => {
   const fetchRecentCustomers = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:8080/sales/recent?limit=20', {
+      const response = await fetch(`${API_URL}/sales/recent?limit=20`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       if (response.ok) {
