@@ -7,6 +7,8 @@ import com.romen.inventory.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +23,7 @@ public class SupplierService {
     private SupplierRepository supplierRepository;
 
     @Transactional
+    @CacheEvict(value = "suppliers", allEntries = true)
     public Supplier createSupplier(Supplier supplier) {
         // Validate email uniqueness
         if (supplier.getEmail() != null && !supplier.getEmail().isEmpty()) {
@@ -36,15 +39,18 @@ public class SupplierService {
                 .orElseThrow(() -> new ResourceNotFoundException("Supplier not found with id: " + id));
     }
 
+    @Cacheable(value = "suppliers")
     public List<Supplier> getAllSuppliers() {
         return supplierRepository.findByIsActiveTrue();
     }
 
+    @Cacheable(value = "suppliers", key = "'search_' + #keyword")
     public List<Supplier> searchSuppliers(String keyword) {
         return supplierRepository.searchActiveSuppliers(keyword);
     }
 
     @Transactional
+    @CacheEvict(value = "suppliers", allEntries = true)
     public Supplier updateSupplier(Long id, Supplier supplierDetails) {
         Supplier supplier = getSupplierById(id);
 
@@ -71,6 +77,7 @@ public class SupplierService {
     }
 
     @Transactional
+    @CacheEvict(value = "suppliers", allEntries = true)
     public void deleteSupplier(Long id) {
         Supplier supplier = getSupplierById(id);
         supplier.setActive(false);

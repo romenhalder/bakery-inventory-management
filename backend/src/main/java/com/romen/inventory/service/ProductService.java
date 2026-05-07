@@ -16,12 +16,15 @@ import com.romen.inventory.repository.StockTransactionRepository;
 import com.romen.inventory.repository.SupplierRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +40,7 @@ public class ProductService {
     private final FileStorageService fileStorageService;
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public ProductResponse createProduct(ProductRequest request, User createdBy) {
         // Validate category
         Category category = categoryRepository.findById(request.getCategoryId())
@@ -128,34 +132,24 @@ public class ProductService {
         return mapToProductResponse(product, inventory);
     }
 
+    @Cacheable(value = "products")
     public List<ProductResponse> getAllProducts() {
-        return productRepository.findByIsActiveTrue().stream()
-                .map(product -> {
-                    Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
-                    return mapToProductResponse(product, inventory);
-                })
-                .collect(Collectors.toList());
+        List<Product> products = productRepository.findAllActiveWithDetails();
+        return mapToProductResponses(products);
     }
 
     public List<ProductResponse> getProductsByCategory(Long categoryId) {
-        return productRepository.findByCategoryIdAndIsActiveTrue(categoryId).stream()
-                .map(product -> {
-                    Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
-                    return mapToProductResponse(product, inventory);
-                })
-                .collect(Collectors.toList());
+        List<Product> products = productRepository.findByCategoryIdAndIsActiveTrue(categoryId);
+        return mapToProductResponses(products);
     }
 
     public List<ProductResponse> getProductsByType(Product.ProductType type) {
-        return productRepository.findActiveByProductType(type).stream()
-                .map(product -> {
-                    Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
-                    return mapToProductResponse(product, inventory);
-                })
-                .collect(Collectors.toList());
+        List<Product> products = productRepository.findActiveByProductType(type);
+        return mapToProductResponses(products);
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public ProductResponse updateProduct(Long id, ProductRequest request) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
@@ -214,6 +208,7 @@ public class ProductService {
     }
 
     @Transactional
+    @CacheEvict(value = "products", allEntries = true)
     public void deleteProduct(Long id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Product not found with id: " + id));
@@ -238,26 +233,18 @@ public class ProductService {
     }
 
     public List<ProductResponse> searchProducts(String keyword) {
-        return productRepository.searchActiveProducts(keyword).stream()
-                .map(product -> {
-                    Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
-                    return mapToProductResponse(product, inventory);
-                })
-                .collect(Collectors.toList());
+        List<Product> products = productRepository.searchActiveProducts(keyword);
+        return mapToProductResponses(products);
     }
 
     public List<ProductResponse> getLowStockProducts() {
-        return productRepository.findLowStockProducts().stream()
-                .map(product -> {
-                    Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
-                    return mapToProductResponse(product, inventory);
-                })
-                .collect(Collectors.toList());
+        List<Product> products = productRepository.findLowStockProducts();
+        return mapToProductResponses(products);
     }
 
     public List<ProductResponse> filterProducts(Long categoryId, String brandName, String flavor,
             Product.ProductType productType, BigDecimal minPrice, BigDecimal maxPrice) {
-        return productRepository.findAll().stream()
+        List<Product> filteredProducts = productRepository.findAll().stream()
                 .filter(product -> {
                     if (!product.getIsActive())
                         return false;
@@ -279,10 +266,21 @@ public class ProductService {
                         return false;
                     return true;
                 })
-                .map(product -> {
-                    Inventory inventory = inventoryRepository.findByProductId(product.getId()).orElse(null);
-                    return mapToProductResponse(product, inventory);
-                })
+                .collect(Collectors.toList());
+        return mapToProductResponses(filteredProducts);
+    }
+
+    private List<ProductResponse> mapToProductResponses(List<Product> products) {
+        if (products.isEmpty()) {
+            return List.of();
+        }
+        List<Long> productIds = products.stream().map(Product::getId).collect(Collectors.toList());
+        Map<Long, Inventory> inventoryMap = inventoryRepository.findByProductIdIn(productIds)
+                .stream()
+                .collect(Collectors.toMap(i -> i.getProduct().getId(), i -> i));
+        
+        return products.stream()
+                .map(p -> mapToProductResponse(p, inventoryMap.get(p.getId())))
                 .collect(Collectors.toList());
     }
 

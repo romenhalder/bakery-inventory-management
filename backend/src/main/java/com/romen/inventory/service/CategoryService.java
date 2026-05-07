@@ -10,6 +10,8 @@ import com.romen.inventory.exception.ResourceNotFoundException;
 import com.romen.inventory.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,6 +28,7 @@ public class CategoryService {
     private final FileStorageService fileStorageService;
 
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryResponse createCategory(CategoryRequest request, User createdBy) {
         // Check if category name already exists for the same parent
         if (categoryRepository.existsByNameAndParentId(
@@ -72,24 +75,28 @@ public class CategoryService {
         return mapToCategoryResponse(category);
     }
 
+    @Cacheable(value = "categories")
     public List<CategoryResponse> getAllCategories() {
         return categoryRepository.findAllActiveOrdered().stream()
                 .map(this::mapToCategoryResponse)
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "categories", key = "'main'")
     public List<CategoryResponse> getMainCategories() {
         return categoryRepository.findActiveMainCategories().stream()
                 .map(this::mapToCategoryResponse)
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "categories", key = "'sub_' + #parentId")
     public List<CategoryResponse> getSubcategories(Long parentId) {
         return categoryRepository.findByParentIdAndIsActiveTrue(parentId).stream()
                 .map(this::mapToCategoryResponse)
                 .collect(Collectors.toList());
     }
 
+    @Cacheable(value = "categories", key = "'tree'")
     public List<CategoryTreeResponse> getCategoryTree() {
         List<Category> mainCategories = categoryRepository.findActiveMainCategories();
         return mainCategories.stream()
@@ -98,6 +105,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryResponse updateCategory(Long id, CategoryRequest request) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
@@ -148,6 +156,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public void deleteCategory(Long id) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
@@ -167,6 +176,7 @@ public class CategoryService {
     }
 
     @Transactional
+    @CacheEvict(value = "categories", allEntries = true)
     public CategoryResponse toggleCategoryStatus(Long id, boolean isActive) {
         Category category = categoryRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + id));
