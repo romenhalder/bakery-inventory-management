@@ -1,0 +1,10 @@
+target/
+*.log
+uploads/
+.classpath
+.project
+.settings/
+.factorypath
+error.log
+run_error.log
+logs/
