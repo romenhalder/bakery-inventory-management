@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  # ========== BACKEND (Spring Boot) ==========
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: bakery-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=${DATABASE_URL}
+      - DATABASE_USERNAME=${DATABASE_USERNAME}
+      - DATABASE_PASSWORD=${DATABASE_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - ADMIN_EMAIL=${ADMIN_EMAIL}
+      - APP_FRONTEND_URL=http://localhost:5173
+    volumes:
+      - backend-uploads:/app/uploads
+    networks:
+      - bakery-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/actuator/health || exit 0"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ========== FRONTEND (Vite React + Nginx) ==========
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8080}
+    container_name: bakery-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      - backend
+    networks:
+      - bakery-net
+    restart: unless-stopped
+
+volumes:
+  backend-uploads:
+    driver: local
+
+networks:
+  bakery-net:
+    driver: bridge
