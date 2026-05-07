@@ -63,8 +63,9 @@ public class InventoryController {
 
     @GetMapping("/transactions")
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER', 'EMPLOYEE')")
-    public ResponseEntity<List<StockTransactionResponse>> getAllTransactions() {
-        List<StockTransactionResponse> transactions = inventoryService.getAllTransactions();
+    public ResponseEntity<org.springframework.data.domain.Page<StockTransactionResponse>> getAllTransactions(
+            @org.springframework.data.web.PageableDefault(size = 1000, sort = "transactionDate", direction = org.springframework.data.domain.Sort.Direction.DESC) org.springframework.data.domain.Pageable pageable) {
+        org.springframework.data.domain.Page<StockTransactionResponse> transactions = inventoryService.getAllTransactions(pageable);
         return ResponseEntity.ok(transactions);
     }
 
